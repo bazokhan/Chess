@@ -62,7 +62,6 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
     cell.square = getSquare(coordinate)
     const newPosition = [...position]
     newPosition.splice(cellIndex, 1, cell)
-    console.log(coordinate, cell)
     setPosition(newPosition)
   }
 

@@ -45,6 +45,7 @@ export const BoardProvider: FC<PropsWithChildren> = ({ children }) => {
   const availableMoves = useMemo(() => {
     return getAvailableMoves(activeCell)
   }, [activeCell])
+  console.log(availableMoves)
   return (
     <BoardContext.Provider
       value={{
