@@ -1,5 +1,6 @@
 import { useBoardContext } from 'context/BoardContext'
 import { FC, PropsWithChildren, useEffect, useRef } from 'react'
+import { HighLight } from './Highlight'
 
 type BoardProps = PropsWithChildren & {
   hideCoordinates?: boolean
@@ -28,18 +29,25 @@ export const Board: FC<BoardProps> = ({
 }) => {
   const boardRef = useRef<HTMLDivElement>(null)
 
-  const { setActiveCell } = useBoardContext()
+  const {
+    setActiveCell,
+    toggleHighlight,
+    highlightedCoordinates,
+    resetHighlightedCoordinates
+  } = useBoardContext()
+
+  console.log({ highlightedCoordinates })
 
   useEffect(() => {
     const handleRightClick = (e: MouseEvent) => {
       e.preventDefault()
       const { x, y } = getPosition(e.clientX, e.clientY, boardRef.current)
-      console.log({ x, y })
+      toggleHighlight({ x, y })
     }
     const board = boardRef.current
     board?.addEventListener('contextmenu', handleRightClick)
     return () => board?.removeEventListener('contextmenu', handleRightClick)
-  }, [])
+  }, [toggleHighlight])
 
   return (
     <div
@@ -48,9 +56,13 @@ export const Board: FC<BoardProps> = ({
       onClick={(e) => {
         if (!e.isPropagationStopped()) {
           setActiveCell(null)
+          resetHighlightedCoordinates()
         }
       }}
     >
+      {highlightedCoordinates?.map(({ x, y }) => (
+        <HighLight key={`${x}-${y}`} x={x} y={y} />
+      ))}
       <svg
         width="800px"
         height="800px"
