@@ -1,7 +1,7 @@
 import { FC } from 'react'
 import { TCoordinate } from 'types/Cell'
 
-type Variant = 'mark' | 'move'
+type Variant = 'mark' | 'availableMove' | 'move'
 
 export const HighLight: FC<TCoordinate & { variant?: Variant }> = ({
   x,
@@ -15,7 +15,7 @@ export const HighLight: FC<TCoordinate & { variant?: Variant }> = ({
         style={{ top: `${y * 12.5}%`, left: `${x * 12.5}%` }}
       />
     )
-  if (variant === 'move')
+  if (variant === 'availableMove')
     return (
       <div
         className={`absolute  z-10 flex h-[12.5%] w-[12.5%] items-center justify-center`}
@@ -23,5 +23,12 @@ export const HighLight: FC<TCoordinate & { variant?: Variant }> = ({
       >
         <div className="h-[30px] w-[30px] rounded-full bg-black/10" />
       </div>
+    )
+  if (variant === 'move')
+    return (
+      <div
+        className={`absolute  z-10 h-[12.5%] w-[12.5%] bg-[#ffff33]/50`}
+        style={{ top: `${y * 12.5}%`, left: `${x * 12.5}%` }}
+      />
     )
 }

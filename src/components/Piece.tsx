@@ -11,10 +11,11 @@ import wq from 'assets/chess_pieces/wq.png'
 import wk from 'assets/chess_pieces/wk.png'
 import wp from 'assets/chess_pieces/wp.png'
 
-import { FC, MouseEventHandler, useCallback } from 'react'
+import { FC, MouseEventHandler, useCallback, useMemo } from 'react'
 import { useBoardContext } from 'context/BoardContext'
 import { TCell } from 'types/Cell'
 import { getCoordinates } from 'utils/getCoordinates'
+import { usePositionContext } from 'context/PositionContext'
 
 const pieceImages = {
   br: br,
@@ -40,7 +41,9 @@ type PieceProps = {
 
 export const Piece: FC<PieceProps> = ({ cell }) => {
   const { activeCell, setActiveCell } = useBoardContext()
+  const { animate } = usePositionContext()
   const isActive = activeCell?.square === cell.square
+  const isAnimated = animate?.cell.square === cell.square
   const onToggle: MouseEventHandler = useCallback(
     (e) => {
       e.stopPropagation()
@@ -54,12 +57,21 @@ export const Piece: FC<PieceProps> = ({ cell }) => {
   )
 
   const { x, y } = getCoordinates(cell.square)
+
+  const currentX = useMemo(() => {
+    if (!isAnimated) return x
+    return animate?.move?.[1]?.x
+  }, [animate?.move, isAnimated, x])
+
+  const currentY = useMemo(() => {
+    if (!isAnimated) return y
+    return animate?.move?.[1]?.y
+  }, [animate?.move, isAnimated, y])
+
   return (
     <div
-      className={`absolute  z-20 h-[12.5%] w-[12.5%] cursor-grab ${
-        isActive ? `bg-[#ffff33]/50` : ''
-      }`}
-      style={{ top: `${y * 12.5}%`, left: `${x * 12.5}%` }}
+      className={`absolute  z-20 h-[12.5%] w-[12.5%] cursor-grab transition-all duration-300`}
+      style={{ top: `${currentY * 12.5}%`, left: `${currentX * 12.5}%` }}
       onClick={onToggle}
     >
       <img className="h-full w-full" src={pieceImages[cell.piece]} />

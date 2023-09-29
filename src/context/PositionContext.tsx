@@ -6,7 +6,7 @@ import {
   useState
 } from 'react'
 import { TCell, TCoordinate } from 'types/Cell'
-import { getSquare } from 'utils/getCoordinates'
+import { getCoordinates, getSquare } from 'utils/getCoordinates'
 
 const initialPosition: TCell[] = [
   { square: 'a1', piece: 'wr' },
@@ -46,22 +46,51 @@ const initialPosition: TCell[] = [
 const PositionContext = createContext<{
   position: TCell[]
   movePieceToCoordinate: (cell: TCell, coordinate: TCoordinate) => void
+  history: [TCoordinate, TCoordinate][]
+  animate: {
+    cell: TCell
+    move: [TCoordinate, TCoordinate]
+  } | null
 }>({
   position: initialPosition,
-  movePieceToCoordinate: () => {}
+  movePieceToCoordinate: () => {},
+  history: [],
+  animate: null
 })
 
 export const usePositionContext = () => useContext(PositionContext)
 
 export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
   const [position, setPosition] = useState<TCell[]>(initialPosition)
+  const [history, setHistory] = useState<[TCoordinate, TCoordinate][]>([])
+  const [animate, setAnimate] = useState<{
+    cell: TCell
+    move: [TCoordinate, TCoordinate]
+  } | null>(null)
 
-  const movePieceToCoordinate = (cell: TCell, coordinate: TCoordinate) => {
+  const tween = async (cell: TCell, move: [TCoordinate, TCoordinate]) => {
+    setAnimate({ cell, move })
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        setAnimate(null)
+        resolve(true)
+      }, 300)
+    })
+  }
+
+  const movePieceToCoordinate = async (
+    cell: TCell,
+    coordinate: TCoordinate
+  ) => {
     const cellIndex = position.findIndex((c) => c.square === cell.square)
+    const oldCoordinates = getCoordinates(cell.square)
     if (cellIndex < 0) return
-    cell.square = getSquare(coordinate)
+    const move: [TCoordinate, TCoordinate] = [oldCoordinates, coordinate]
+    const newCell = { ...cell, square: getSquare(coordinate) }
     const newPosition = [...position]
-    newPosition.splice(cellIndex, 1, cell)
+    newPosition.splice(cellIndex, 1, newCell)
+    setHistory([...history, move])
+    await tween(cell, move)
     setPosition(newPosition)
   }
 
@@ -69,7 +98,9 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
     <PositionContext.Provider
       value={{
         position,
-        movePieceToCoordinate
+        movePieceToCoordinate,
+        history,
+        animate
       }}
     >
       {children}

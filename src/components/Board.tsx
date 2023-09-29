@@ -30,6 +30,7 @@ export const Board: FC<BoardProps> = ({ hideCoordinates = false }) => {
 
   const {
     activeCell,
+    activeCoordinates,
     setActiveCell,
     toggleHighlight,
     highlightedCoordinates,
@@ -37,7 +38,7 @@ export const Board: FC<BoardProps> = ({ hideCoordinates = false }) => {
     availableMoves
   } = useBoardContext()
 
-  const { position, movePieceToCoordinate } = usePositionContext()
+  const { position, movePieceToCoordinate, history } = usePositionContext()
 
   // User Interaction with the board
   useEffect(() => {
@@ -82,8 +83,21 @@ export const Board: FC<BoardProps> = ({ hideCoordinates = false }) => {
         <HighLight key={`${x}-${y}`} x={x} y={y} />
       ))}
       {availableMoves?.map(({ x, y }) => (
-        <HighLight key={`${x}-${y}`} x={x} y={y} variant="move" />
+        <HighLight key={`${x}-${y}`} x={x} y={y} variant="availableMove" />
       ))}
+      {history
+        ?.at(-1)
+        ?.map(({ x, y }) => (
+          <HighLight key={`${x}-${y}`} x={x} y={y} variant="move" />
+        ))}
+      {activeCoordinates ? (
+        <HighLight
+          key={`${activeCoordinates.x}-${activeCoordinates.y}`}
+          x={activeCoordinates.x}
+          y={activeCoordinates.y}
+          variant="move"
+        />
+      ) : null}
       <svg
         width="800px"
         height="800px"

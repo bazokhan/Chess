@@ -8,6 +8,7 @@ import {
 } from 'react'
 import { TCell, TCoordinate } from 'types/Cell'
 import { getAvailableMoves } from 'utils/getAvailableMoves'
+import { getCoordinates } from 'utils/getCoordinates'
 
 const BoardContext = createContext<{
   activeCell: TCell | null
@@ -16,13 +17,15 @@ const BoardContext = createContext<{
   toggleHighlight: (cell: TCoordinate) => void
   resetHighlightedCoordinates: () => void
   availableMoves: TCoordinate[]
+  activeCoordinates: TCoordinate | null
 }>({
   activeCell: null,
   setActiveCell: () => {},
   highlightedCoordinates: [],
   toggleHighlight: () => {},
   resetHighlightedCoordinates: () => {},
-  availableMoves: []
+  availableMoves: [],
+  activeCoordinates: null
 })
 
 export const useBoardContext = () => useContext(BoardContext)
@@ -45,7 +48,9 @@ export const BoardProvider: FC<PropsWithChildren> = ({ children }) => {
   const availableMoves = useMemo(() => {
     return getAvailableMoves(activeCell)
   }, [activeCell])
-  console.log(availableMoves)
+  const activeCoordinates = activeCell
+    ? getCoordinates(activeCell.square)
+    : null
   return (
     <BoardContext.Provider
       value={{
@@ -54,7 +59,8 @@ export const BoardProvider: FC<PropsWithChildren> = ({ children }) => {
         highlightedCoordinates,
         toggleHighlight,
         resetHighlightedCoordinates,
-        availableMoves
+        availableMoves,
+        activeCoordinates
       }}
     >
       {children}
