@@ -41,7 +41,7 @@ type PieceProps = {
 
 export const Piece: FC<PieceProps> = ({ cell }) => {
   const { activeCell, setActiveCell } = useBoardContext()
-  const { animate } = usePositionContext()
+  const { animate, future } = usePositionContext()
   const isActive = activeCell?.square === cell.square
   const isAnimated = animate?.cell.square === cell.square
   const onToggle: MouseEventHandler = useCallback(
@@ -72,7 +72,7 @@ export const Piece: FC<PieceProps> = ({ cell }) => {
     <div
       className={`absolute  z-20 h-[12.5%] w-[12.5%] cursor-grab transition-all duration-300`}
       style={{ top: `${currentY * 12.5}%`, left: `${currentX * 12.5}%` }}
-      onClick={onToggle}
+      onClick={future?.length ? undefined : onToggle}
     >
       <img className="h-full w-full" src={pieceImages[cell.piece]} />
     </div>

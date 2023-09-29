@@ -46,23 +46,36 @@ const initialPosition: TCell[] = [
 const PositionContext = createContext<{
   position: TCell[]
   movePieceToCoordinate: (cell: TCell, coordinate: TCoordinate) => void
-  history: [TCoordinate, TCoordinate][]
+  history: HistoryItem[]
   animate: {
     cell: TCell
     move: [TCoordinate, TCoordinate]
   } | null
+  moveBackInHistory: () => void
+  future: HistoryItem[]
+  moveForwardInHistory: () => void
 }>({
   position: initialPosition,
   movePieceToCoordinate: () => {},
   history: [],
-  animate: null
+  animate: null,
+  moveBackInHistory: () => {},
+  future: [],
+  moveForwardInHistory: () => {}
 })
+
+type HistoryItem = {
+  oldCell: TCell
+  newCell: TCell
+  coordinates: [TCoordinate, TCoordinate]
+}
 
 export const usePositionContext = () => useContext(PositionContext)
 
 export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
   const [position, setPosition] = useState<TCell[]>(initialPosition)
-  const [history, setHistory] = useState<[TCoordinate, TCoordinate][]>([])
+  const [history, setHistory] = useState<HistoryItem[]>([])
+  const [future, setFuture] = useState<HistoryItem[]>([])
   const [animate, setAnimate] = useState<{
     cell: TCell
     move: [TCoordinate, TCoordinate]
@@ -80,19 +93,56 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
 
   const movePieceToCoordinate = async (
     cell: TCell,
-    coordinate: TCoordinate
+    coordinate: TCoordinate,
+    skipHistory: boolean = false
   ) => {
     const cellIndex = position.findIndex((c) => c.square === cell.square)
     const oldCoordinates = getCoordinates(cell.square)
     if (cellIndex < 0) return
-    const move: [TCoordinate, TCoordinate] = [oldCoordinates, coordinate]
     const newCell = { ...cell, square: getSquare(coordinate) }
+    const move: HistoryItem = {
+      oldCell: cell,
+      newCell,
+      coordinates: [oldCoordinates, coordinate]
+    }
     const newPosition = [...position]
     newPosition.splice(cellIndex, 1, newCell)
-    setHistory([...history, move])
-    await tween(cell, move)
+    if (!skipHistory) {
+      setHistory([...history, move])
+    }
+    await tween(cell, move.coordinates)
     setPosition(newPosition)
   }
+
+  const moveBackInHistory = async () => {
+    if (animate) return
+    if (!history.length) return
+    const lastMove = history.at(-1)
+    if (!lastMove?.newCell) return
+    await movePieceToCoordinate(
+      lastMove?.newCell,
+      lastMove?.coordinates?.[0],
+      true
+    )
+    setHistory(history.filter((i) => i !== lastMove))
+    setFuture([...future, lastMove])
+  }
+
+  const moveForwardInHistory = async () => {
+    if (animate) return
+    if (!future.length) return
+    const lastMove = future.at(-1)
+    if (!lastMove?.oldCell) return
+    await movePieceToCoordinate(
+      lastMove?.oldCell,
+      lastMove?.coordinates?.[1],
+      true
+    )
+    setFuture(future.filter((i) => i !== lastMove))
+    setHistory([...history, lastMove])
+  }
+
+  console.log(history.length, future.length)
 
   return (
     <PositionContext.Provider
@@ -100,7 +150,10 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
         position,
         movePieceToCoordinate,
         history,
-        animate
+        animate,
+        moveBackInHistory,
+        future,
+        moveForwardInHistory
       }}
     >
       {children}

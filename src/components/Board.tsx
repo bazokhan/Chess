@@ -87,7 +87,7 @@ export const Board: FC<BoardProps> = ({ hideCoordinates = false }) => {
       ))}
       {history
         ?.at(-1)
-        ?.map(({ x, y }) => (
+        ?.coordinates?.map(({ x, y }) => (
           <HighLight key={`${x}-${y}`} x={x} y={y} variant="move" />
         ))}
       {activeCoordinates ? (
