@@ -1,8 +1,10 @@
 import { useBoardContext } from 'context/BoardContext'
-import { FC, PropsWithChildren, useEffect, useRef } from 'react'
+import { FC, useEffect, useRef } from 'react'
 import { HighLight } from './Highlight'
+import { Piece } from './Piece'
+import { usePositionContext } from 'context/PositionContext'
 
-type BoardProps = PropsWithChildren & {
+type BoardProps = {
   hideCoordinates?: boolean
 }
 
@@ -23,38 +25,54 @@ const getPosition = (_x: number, _y: number, board: HTMLDivElement | null) => {
   return { x, y }
 }
 
-export const Board: FC<BoardProps> = ({
-  hideCoordinates = false,
-  children
-}) => {
+export const Board: FC<BoardProps> = ({ hideCoordinates = false }) => {
   const boardRef = useRef<HTMLDivElement>(null)
 
   const {
+    activeCell,
     setActiveCell,
     toggleHighlight,
     highlightedCoordinates,
-    resetHighlightedCoordinates
+    resetHighlightedCoordinates,
+    availableMoves
   } = useBoardContext()
 
-  console.log({ highlightedCoordinates })
+  const { position, movePieceToCoordinate } = usePositionContext()
 
+  // User Interaction with the board
   useEffect(() => {
     const handleRightClick = (e: MouseEvent) => {
       e.preventDefault()
       const { x, y } = getPosition(e.clientX, e.clientY, boardRef.current)
-      toggleHighlight({ x, y })
+      if (!activeCell) {
+        toggleHighlight({ x, y })
+      } else {
+        setActiveCell(null)
+      }
     }
     const board = boardRef.current
     board?.addEventListener('contextmenu', handleRightClick)
     return () => board?.removeEventListener('contextmenu', handleRightClick)
-  }, [toggleHighlight])
+  }, [activeCell, setActiveCell, toggleHighlight])
 
   return (
     <div
       className="relative max-h-[80vh] w-[80vh] overflow-hidden rounded-md bg-white"
       ref={boardRef}
       onClick={(e) => {
+        // User Interaction with the board
         if (!e.isPropagationStopped()) {
+          const { x: boardX, y: boardY } = getPosition(
+            e.clientX,
+            e.clientY,
+            boardRef.current
+          )
+          if (
+            activeCell &&
+            availableMoves.find(({ x, y }) => x === boardX && y === boardY)
+          ) {
+            movePieceToCoordinate(activeCell, { x: boardX, y: boardY })
+          }
           setActiveCell(null)
           resetHighlightedCoordinates()
         }
@@ -62,6 +80,9 @@ export const Board: FC<BoardProps> = ({
     >
       {highlightedCoordinates?.map(({ x, y }) => (
         <HighLight key={`${x}-${y}`} x={x} y={y} />
+      ))}
+      {availableMoves?.map(({ x, y }) => (
+        <HighLight key={`${x}-${y}`} x={x} y={y} variant="move" />
       ))}
       <svg
         width="800px"
@@ -101,7 +122,9 @@ export const Board: FC<BoardProps> = ({
           </>
         )}
       </svg>
-      {children}
+      {position.map((cell) => (
+        <Piece key={cell.square} cell={cell} />
+      ))}
     </div>
   )
 }

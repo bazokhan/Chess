@@ -14,7 +14,7 @@ import wp from 'assets/chess_pieces/wp.png'
 import { FC, MouseEventHandler, useCallback } from 'react'
 import { useBoardContext } from 'context/BoardContext'
 import { TCell } from 'types/Cell'
-import { getPosition } from 'utils/getPosition'
+import { getCoordinates } from 'utils/getCoordinates'
 
 const pieceImages = {
   br: br,
@@ -53,10 +53,10 @@ export const Piece: FC<PieceProps> = ({ cell }) => {
     [cell, isActive, setActiveCell]
   )
 
-  const { x, y } = getPosition(cell.square)
+  const { x, y } = getCoordinates(cell.square)
   return (
     <div
-      className={`absolute  h-[12.5%] w-[12.5%] cursor-grab ${
+      className={`absolute  z-20 h-[12.5%] w-[12.5%] cursor-grab ${
         isActive ? `bg-[#ffff33]/50` : ''
       }`}
       style={{ top: `${y * 12.5}%`, left: `${x * 12.5}%` }}
