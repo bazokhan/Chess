@@ -6,6 +6,8 @@ import {
   useState
 } from 'react'
 import { TCell, TCoordinate } from 'types/Cell'
+import { HistoryItem } from 'types/History'
+import { encodePgn } from 'utils/encodePgn'
 import { getCoordinates, getSquare } from 'utils/getCoordinates'
 
 const initialPosition: TCell[] = [
@@ -54,6 +56,7 @@ const PositionContext = createContext<{
   moveBackInHistory: () => void
   future: HistoryItem[]
   moveForwardInHistory: () => void
+  pgn: string[]
 }>({
   position: initialPosition,
   movePieceToCoordinate: () => {},
@@ -61,14 +64,9 @@ const PositionContext = createContext<{
   animate: null,
   moveBackInHistory: () => {},
   future: [],
-  moveForwardInHistory: () => {}
+  moveForwardInHistory: () => {},
+  pgn: []
 })
-
-type HistoryItem = {
-  oldCell: TCell
-  newCell: TCell
-  coordinates: [TCoordinate, TCoordinate]
-}
 
 export const usePositionContext = () => useContext(PositionContext)
 
@@ -76,6 +74,7 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
   const [position, setPosition] = useState<TCell[]>(initialPosition)
   const [history, setHistory] = useState<HistoryItem[]>([])
   const [future, setFuture] = useState<HistoryItem[]>([])
+  const [pgn, setPgn] = useState<string[]>([])
   const [animate, setAnimate] = useState<{
     cell: TCell
     move: [TCoordinate, TCoordinate]
@@ -109,6 +108,7 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
     newPosition.splice(cellIndex, 1, newCell)
     if (!skipHistory) {
       setHistory([...history, move])
+      setPgn(encodePgn(pgn, move))
     }
     await tween(cell, move.coordinates)
     setPosition(newPosition)
@@ -142,8 +142,6 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
     setHistory([...history, lastMove])
   }
 
-  console.log(history.length, future.length)
-
   return (
     <PositionContext.Provider
       value={{
@@ -153,7 +151,8 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
         animate,
         moveBackInHistory,
         future,
-        moveForwardInHistory
+        moveForwardInHistory,
+        pgn
       }}
     >
       {children}
