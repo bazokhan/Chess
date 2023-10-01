@@ -97,15 +97,29 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
   ) => {
     const cellIndex = position.findIndex((c) => c.square === cell.square)
     const oldCoordinates = getCoordinates(cell.square)
-    if (cellIndex < 0) return
-    const newCell = { ...cell, square: getSquare(coordinate) }
+    if (cellIndex < 0) return // there is no piece to move
+
+    const newSquare = getSquare(coordinate)
+    const alreadyHasPiece = position.find((c) => c.square === newSquare)
+
+    const newCell = { ...cell, square: newSquare }
     const move: HistoryItem = {
       oldCell: cell,
       newCell,
       coordinates: [oldCoordinates, coordinate]
     }
-    const newPosition = [...position]
+    let newPosition = [...position]
     newPosition.splice(cellIndex, 1, newCell)
+
+    // Capture
+    if (alreadyHasPiece) {
+      newPosition = newPosition.filter(
+        (c) =>
+          c.piece !== alreadyHasPiece.piece ||
+          c.square !== alreadyHasPiece.square
+      )
+    }
+
     if (!skipHistory) {
       setHistory([...history, move])
       setPgn(encodePgn(pgn, move))

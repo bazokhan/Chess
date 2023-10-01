@@ -48,6 +48,7 @@ export const BoardProvider: FC<PropsWithChildren> = ({ children }) => {
   }
   const resetHighlightedCoordinates = () => setHighlightedCoordinates([])
   const availableMoves = useMemo(() => {
+    if (!activeCell) return []
     return getAvailableMoves(activeCell, position)
   }, [activeCell, position])
   const activeCoordinates = activeCell

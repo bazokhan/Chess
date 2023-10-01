@@ -44,19 +44,25 @@ export const Piece: FC<PieceProps> = ({ cell }) => {
   const { animate, future } = usePositionContext()
   const isActive = activeCell?.square === cell.square
   const isAnimated = animate?.cell.square === cell.square
+
+  const { x, y } = getCoordinates(cell.square)
+
   const onToggle: MouseEventHandler = useCallback(
     (e) => {
+      if (!isActive && activeCell) {
+        return
+      }
+
       e.stopPropagation()
+
       if (isActive) {
         setActiveCell(null)
       } else {
         setActiveCell(cell)
       }
     },
-    [cell, isActive, setActiveCell]
+    [activeCell, cell, isActive, setActiveCell]
   )
-
-  const { x, y } = getCoordinates(cell.square)
 
   const currentX = useMemo(() => {
     if (!isAnimated) return x
@@ -70,7 +76,9 @@ export const Piece: FC<PieceProps> = ({ cell }) => {
 
   return (
     <div
-      className={`absolute  z-20 h-[12.5%] w-[12.5%] cursor-grab transition-all duration-300`}
+      className={`absolute ${
+        isActive ? 'z-30' : 'z-20'
+      }  h-[12.5%] w-[12.5%] cursor-grab transition-all duration-300`}
       style={{ top: `${currentY * 12.5}%`, left: `${currentX * 12.5}%` }}
       onClick={future?.length ? undefined : onToggle}
     >
