@@ -1,6 +1,7 @@
 import { TCell, TCoordinate } from 'types/Cell'
 import { getCoordinates, getSquare } from 'utils/getCoordinates'
 import { isWhite } from 'utils/pieces'
+import { checkIsSquareEmpty, getRankSquaresBetween } from 'utils/position'
 
 export const getKingAvailableMoves = ({
   piece,
@@ -54,8 +55,13 @@ export const getKingAvailableMoves = ({
         (r) => r.square === c.square && r.piece === c.piece && !c.moved
       )
   )
-  if (!piece.moved && rooksInPosition?.length) {
-    rooksInPosition.forEach((r) => {
+  const validRooks = rooksInPosition.filter((r) =>
+    getRankSquaresBetween(r.square, piece.square).every((square) =>
+      checkIsSquareEmpty(square, position)
+    )
+  )
+  if (!piece.moved && validRooks?.length) {
+    validRooks.forEach((r) => {
       const direction =
         getCoordinates(r.square).x < getCoordinates(piece.square).x ? -1 : 1
       moves.push({
