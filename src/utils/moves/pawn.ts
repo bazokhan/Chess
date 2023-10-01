@@ -1,5 +1,6 @@
 import { TCell, TCoordinate } from 'types/Cell'
 import { getCoordinates, getSquare } from 'utils/getCoordinates'
+import { isWhite } from 'utils/pieces'
 
 export const getPawnAvailableMoves = ({
   piece,
@@ -10,7 +11,7 @@ export const getPawnAvailableMoves = ({
 }) => {
   const { x, y } = getCoordinates(piece.square)
   const moves: TCoordinate[] = []
-  const isWhitePiece = piece.piece[0] === 'w'
+  const isWhitePiece = isWhite(piece)
   const yDirection = isWhitePiece ? -1 : 1
   const firstPawnRank = isWhitePiece ? '2' : '7'
   const maxDelta = piece.square[1] === firstPawnRank ? 2 : 1

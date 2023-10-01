@@ -1,27 +1,31 @@
 import { HistoryItem } from 'types/History'
+import { isWhite } from './pieces'
 
 // type TPieceNotation = '' | 'R' | 'N' | 'B' | 'Q' | 'K'
 
 export const encodePgn = (pgn: string[], move: HistoryItem): string[] => {
   let pieceName = move.oldCell.piece?.split('')?.[1]?.toUpperCase()
   if (pieceName === 'P') pieceName = ''
-  const isWhite = move.oldCell.piece?.startsWith('w')
+  const isWhitePiece = isWhite(move.oldCell)
+  const captureHappened = move.capturedCell
+  if (captureHappened && !pieceName) pieceName = move.oldCell.square[0] // When a pawn makes a capture, the file from which the pawn departed is used to identify the pawn
+  const captureText = captureHappened ? 'x' : ''
+  const moveText = pieceName + captureText + move.newCell.square
   if (!pgn.length) {
-    if (isWhite) {
-      pgn.push('1. ' + pieceName + move.newCell.square)
+    if (isWhitePiece) {
+      pgn.push('1. ' + moveText)
     } else {
-      pgn.push(`1... ` + pieceName + move.newCell.square)
+      pgn.push(`1... ` + moveText)
     }
-  } else if (isWhite) {
-    pgn.push(`${pgn.length + 1}. ` + pieceName + move.newCell.square)
+  } else if (isWhitePiece) {
+    pgn.push(`${pgn.length + 1}. ` + moveText)
   } else if ((pgn.at(-1)?.split(' ')?.length ?? 0) > 2) {
     // double turn for black .. Invalid but accounted for
-    pgn.push(`${pgn.length + 1}... ` + pieceName + move.newCell.square)
+    pgn.push(`${pgn.length + 1}... ` + moveText)
   } else {
     let lastMove = pgn.at(-1) ?? ''
     lastMove += ' '
-    lastMove += pieceName
-    lastMove += move.newCell.square
+    lastMove += moveText
     pgn.pop()
     pgn.push(lastMove)
   }

@@ -1,3 +1,4 @@
+import { ANIMATION_DURATION } from 'constants/pieces'
 import {
   FC,
   PropsWithChildren,
@@ -6,7 +7,7 @@ import {
   useState
 } from 'react'
 import { TCell, TCoordinate } from 'types/Cell'
-import { HistoryItem } from 'types/History'
+import { AnimationRecord, HistoryItem } from 'types/History'
 import { encodePgn } from 'utils/encodePgn'
 import { getCoordinates, getSquare } from 'utils/getCoordinates'
 
@@ -49,10 +50,7 @@ const PositionContext = createContext<{
   position: TCell[]
   movePieceToCoordinate: (cell: TCell, coordinate: TCoordinate) => void
   history: HistoryItem[]
-  animate: {
-    cell: TCell
-    move: [TCoordinate, TCoordinate]
-  } | null
+  animate: AnimationRecord
   moveBackInHistory: () => void
   future: HistoryItem[]
   moveForwardInHistory: () => void
@@ -61,7 +59,7 @@ const PositionContext = createContext<{
   position: initialPosition,
   movePieceToCoordinate: () => {},
   history: [],
-  animate: null,
+  animate: {},
   moveBackInHistory: () => {},
   future: [],
   moveForwardInHistory: () => {},
@@ -70,24 +68,62 @@ const PositionContext = createContext<{
 
 export const usePositionContext = () => useContext(PositionContext)
 
+const getNewPosition = (
+  cell: TCell,
+  coordinate: TCoordinate,
+  position: TCell[]
+) => {
+  const cellIndex = position.findIndex((c) => c.square === cell.square)
+  const oldCoordinates = getCoordinates(cell.square)
+  const newSquare = getSquare(coordinate)
+  const newCell = { ...cell, square: newSquare, moved: true }
+  const move: HistoryItem = {
+    oldCell: cell,
+    newCell,
+    coordinates: [oldCoordinates, coordinate]
+  }
+  const newPosition = [...position]
+  newPosition.splice(cellIndex, 1)
+  newPosition.push(newCell)
+  return { move, newPosition, newSquare, newCell }
+}
+
 export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
   const [position, setPosition] = useState<TCell[]>(initialPosition)
   const [history, setHistory] = useState<HistoryItem[]>([])
   const [future, setFuture] = useState<HistoryItem[]>([])
   const [pgn, setPgn] = useState<string[]>([])
-  const [animate, setAnimate] = useState<{
-    cell: TCell
-    move: [TCoordinate, TCoordinate]
-  } | null>(null)
+  const [animate, setAnimate] = useState<AnimationRecord>({})
 
-  const tween = async (cell: TCell, move: [TCoordinate, TCoordinate]) => {
-    setAnimate({ cell, move })
+  const tween = async (
+    cellsAndMoves: [TCell, [TCoordinate, TCoordinate]][]
+  ) => {
+    const newTweens = cellsAndMoves.reduce((acc, [cell, move]) => {
+      acc[cell.square] = { cell, move }
+      return acc
+    }, {} as AnimationRecord)
+    setAnimate({ ...animate, ...newTweens })
     return new Promise((resolve) => {
       setTimeout(() => {
-        setAnimate(null)
+        const newTweens = cellsAndMoves.reduce((acc, [cell]) => {
+          acc[cell.square] = null
+          return acc
+        }, {} as AnimationRecord)
+        setAnimate({ ...animate, ...newTweens })
         resolve(true)
-      }, 300)
+      }, ANIMATION_DURATION)
     })
+  }
+
+  const movePieces = async (cellsAndCoordinates: [TCell, TCoordinate][]) => {
+    let initial = position
+    const moves: HistoryItem[] = []
+    cellsAndCoordinates.forEach(([cell, coordinate]) => {
+      const { move, newPosition } = getNewPosition(cell, coordinate, initial)
+      initial = newPosition
+      moves.push(move)
+    })
+    return { moves, newPosition: initial }
   }
 
   const movePieceToCoordinate = async (
@@ -95,37 +131,45 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
     coordinate: TCoordinate,
     skipHistory: boolean = false
   ) => {
-    const cellIndex = position.findIndex((c) => c.square === cell.square)
-    const oldCoordinates = getCoordinates(cell.square)
-    if (cellIndex < 0) return // there is no piece to move
+    let final = position
 
-    const newSquare = getSquare(coordinate)
-    const alreadyHasPiece = position.find((c) => c.square === newSquare)
-
-    const newCell = { ...cell, square: newSquare }
-    const move: HistoryItem = {
-      oldCell: cell,
-      newCell,
-      coordinates: [oldCoordinates, coordinate]
+    // Castle
+    if (
+      coordinate.type === 'castle' &&
+      coordinate.relatedPiece &&
+      coordinate.relatedCoordinates
+    ) {
+      const { moves, newPosition } = await movePieces([
+        [cell, coordinate],
+        [coordinate.relatedPiece, coordinate.relatedCoordinates]
+      ])
+      final = newPosition
+      await tween(moves.map((m) => [m.oldCell, m.coordinates]))
+      setPosition(final)
+      return final
     }
-    let newPosition = [...position]
-    newPosition.splice(cellIndex, 1, newCell)
+
+    const { move, newPosition, newSquare } = getNewPosition(
+      cell,
+      coordinate,
+      position
+    )
+    const alreadyHasPiece = position.find((c) => c.square === newSquare)
+    final = newPosition
 
     // Capture
     if (alreadyHasPiece) {
-      newPosition = newPosition.filter(
-        (c) =>
-          c.piece !== alreadyHasPiece.piece ||
-          c.square !== alreadyHasPiece.square
-      )
+      final = newPosition.filter((c) => c !== alreadyHasPiece)
+      move.capturedCell = alreadyHasPiece
     }
 
     if (!skipHistory) {
       setHistory([...history, move])
       setPgn(encodePgn(pgn, move))
     }
-    await tween(cell, move.coordinates)
-    setPosition(newPosition)
+    await tween([[cell, move.coordinates]])
+    setPosition(final)
+    return final
   }
 
   const moveBackInHistory = async () => {

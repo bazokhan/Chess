@@ -16,6 +16,7 @@ import { useBoardContext } from 'context/BoardContext'
 import { TCell } from 'types/Cell'
 import { getCoordinates } from 'utils/getCoordinates'
 import { usePositionContext } from 'context/PositionContext'
+import { ANIMATION_DURATION } from 'constants/pieces'
 
 const pieceImages = {
   br: br,
@@ -43,7 +44,7 @@ export const Piece: FC<PieceProps> = ({ cell }) => {
   const { activeCell, setActiveCell } = useBoardContext()
   const { animate, future } = usePositionContext()
   const isActive = activeCell?.square === cell.square
-  const isAnimated = animate?.cell.square === cell.square
+  const isAnimated = animate[cell.square]?.cell.square === cell.square
 
   const { x, y } = getCoordinates(cell.square)
 
@@ -66,20 +67,24 @@ export const Piece: FC<PieceProps> = ({ cell }) => {
 
   const currentX = useMemo(() => {
     if (!isAnimated) return x
-    return animate?.move?.[1]?.x
-  }, [animate?.move, isAnimated, x])
+    return animate[cell.square]?.move?.[1]?.x ?? 0
+  }, [animate, cell.square, isAnimated, x])
 
   const currentY = useMemo(() => {
     if (!isAnimated) return y
-    return animate?.move?.[1]?.y
-  }, [animate?.move, isAnimated, y])
+    return animate[cell.square]?.move?.[1]?.y ?? 0
+  }, [animate, cell.square, isAnimated, y])
 
   return (
     <div
       className={`absolute ${
         isActive ? 'z-30' : 'z-20'
-      }  h-[12.5%] w-[12.5%] cursor-grab transition-all duration-300`}
-      style={{ top: `${currentY * 12.5}%`, left: `${currentX * 12.5}%` }}
+      }  h-[12.5%] w-[12.5%] cursor-grab`}
+      style={{
+        top: `${currentY * 12.5}%`,
+        left: `${currentX * 12.5}%`,
+        transition: `all ${ANIMATION_DURATION}ms`
+      }}
       onClick={future?.length ? undefined : onToggle}
     >
       <img className="h-full w-full" src={pieceImages[cell.piece]} />
