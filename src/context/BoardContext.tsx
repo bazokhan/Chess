@@ -9,6 +9,7 @@ import {
 import { TCell, TCoordinate } from 'types/Cell'
 import { getAvailableMoves } from 'utils/getAvailableMoves'
 import { getCoordinates } from 'utils/getCoordinates'
+import { usePositionContext } from './PositionContext'
 
 const BoardContext = createContext<{
   activeCell: TCell | null
@@ -35,6 +36,7 @@ export const BoardProvider: FC<PropsWithChildren> = ({ children }) => {
   const [highlightedCoordinates, setHighlightedCoordinates] = useState<
     TCoordinate[]
   >([])
+  const { position } = usePositionContext()
   const toggleHighlight = (cell: TCoordinate) => {
     if (highlightedCoordinates.find((c) => c.x === cell.x && c.y === cell.y)) {
       setHighlightedCoordinates(
@@ -46,8 +48,8 @@ export const BoardProvider: FC<PropsWithChildren> = ({ children }) => {
   }
   const resetHighlightedCoordinates = () => setHighlightedCoordinates([])
   const availableMoves = useMemo(() => {
-    return getAvailableMoves(activeCell)
-  }, [activeCell])
+    return getAvailableMoves(activeCell, position)
+  }, [activeCell, position])
   const activeCoordinates = activeCell
     ? getCoordinates(activeCell.square)
     : null
