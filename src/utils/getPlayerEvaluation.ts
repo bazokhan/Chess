@@ -133,55 +133,50 @@ export const calculateBestMove = ({
   depth?: number
 }): TreeItem | null => {
   const before = Date.now()
+  const lines = flatten(generatePositionsTree(turn, position, depth))
 
-  let selfEval = getPlayerEvaluation(turn, position)
-  let opponentEval = getPlayerEvaluation(turn === 'w' ? 'b' : 'w', position)
-  let deltaEval = selfEval - opponentEval
-  let bestMove: TreeItem | null = null
+  const hashedDeltas: Record<
+    string,
+    { delta: number; move: TreeItem; line: TreeItem[] }
+  > = {} as Record<string, { delta: number; move: TreeItem; line: TreeItem[] }>
 
-  const moveChains = flatten(generatePositionsTree(turn, position, depth))
-  moveChains.forEach((moveChain) => {
+  lines.forEach((line) => {
     let originalPosition = position
-    moveChain.forEach(({ piece, move }) => {
-      originalPosition = getNewPosition(piece, move, position).newPosition
+
+    line.forEach(({ piece, move }) => {
+      originalPosition = getNewPosition(
+        piece,
+        move,
+        originalPosition
+      ).newPosition
+      const id = line[0].piece.square + '-' + getSquare(move)
+      const selfEvaluation = getPlayerEvaluation(turn, originalPosition)
+      const opponentEvaluation = getPlayerEvaluation(
+        turn === 'w' ? 'b' : 'w',
+        originalPosition
+      )
+      const deltaEvaluation = selfEvaluation - opponentEvaluation
+
+      const thisLine = deltaEvaluation > hashedDeltas[id]?.delta ?? 0
+
+      hashedDeltas[id] = {
+        delta: Math.min(deltaEvaluation, hashedDeltas[id]?.delta ?? 0),
+        move: line[0],
+        line: thisLine ? line : hashedDeltas[id]?.line
+      }
     })
-    const selfEvaluation = getPlayerEvaluation(turn, originalPosition)
-    const opponentEvaluation = getPlayerEvaluation(
-      turn === 'w' ? 'b' : 'w',
-      originalPosition
-    )
-    const deltaEvaluation = selfEvaluation - opponentEvaluation
-    if (deltaEvaluation > deltaEval) {
-      bestMove = moveChain[0]
-      selfEval = selfEvaluation
-      opponentEval = opponentEvaluation
-      deltaEval = deltaEvaluation
-    }
   })
 
-  console.log(bestMove)
-
-  // const nextMoves = generateAllNextMoves(turn, position)
-  // const allPossibleMoves = nextMoves.flatMap(({ piece, moves }) => {
-  //   return moves.map((move) => {
-  //     const { newPosition } = getNewPosition(piece, move, position)
-  //     const selfEvaluation = getPlayerEvaluation(turn, newPosition)
-  //     const opponentEvaluation = getPlayerEvaluation(
-  //       turn === 'w' ? 'b' : 'w',
-  //       newPosition
-  //     )
-  //     return { selfEvaluation, opponentEvaluation, piece, move }
-  //   })
-  // })
   const after = Date.now()
-  console.log(`calculated in ${after - before}ms`)
-  return bestMove
+  console.log(
+    `calculated ${lines?.length ?? 0} lines at depth ${depth} in ${
+      after - before
+    }ms`
+  )
 
-  // return allPossibleMoves.sort((a, b) => {
-  //   return (
-  //     b.selfEvaluation -
-  //     b.opponentEvaluation -
-  //     (a.selfEvaluation - a.opponentEvaluation)
-  //   )
-  // })[0]
+  const valuesSorted = Object.values(hashedDeltas)
+    .filter((l) => !!l.line)
+    .sort((a, b) => b.delta - a.delta)
+  console.log(valuesSorted)
+  return valuesSorted[0].move
 }
