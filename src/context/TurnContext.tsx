@@ -1,0 +1,37 @@
+import {
+  FC,
+  PropsWithChildren,
+  createContext,
+  useContext,
+  useState
+} from 'react'
+import { TPlayer } from 'utils/getPlayerEvaluation'
+
+const TurnContext = createContext<{
+  turn: TPlayer
+  setTurn: (player: TPlayer) => void
+  toggleTurn: () => void
+}>({
+  turn: 'w',
+  setTurn: () => {},
+  toggleTurn: () => {}
+})
+
+export const useTurnContext = () => useContext(TurnContext)
+
+export const TurnProvider: FC<PropsWithChildren> = ({ children }) => {
+  const [turn, setTurn] = useState<TPlayer>('w')
+  const toggleTurn = () => setTurn(turn === 'w' ? 'b' : 'w')
+
+  return (
+    <TurnContext.Provider
+      value={{
+        turn,
+        setTurn,
+        toggleTurn
+      }}
+    >
+      {children}
+    </TurnContext.Provider>
+  )
+}
