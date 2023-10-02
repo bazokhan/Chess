@@ -2,6 +2,8 @@ import { TCell, TCoordinate } from 'types/Cell'
 import { getAvailableMoves } from './getAvailableMoves'
 import { getSquare } from './getCoordinates'
 import { getNewPosition } from './position'
+import { flatten } from './flatten'
+import { fileLog } from './fileLog'
 
 export type TPlayer = 'w' | 'b'
 
@@ -58,14 +60,16 @@ type TreeItem = {
   next?: TreeItem[]
 }
 
-const generatePositionsTree = (
+export const generatePositionsTree = (
   turn: TPlayer,
   position: TCell[],
-  depth: number
+  depth: number,
+  log = true
 ): TreeItem[] => {
   if (!depth) return []
+  const start = Date.now()
   const nextMoves = generateAllNextMoves(turn, position)
-  return nextMoves
+  const result = nextMoves
     .map(({ piece, moves }) => {
       return moves.map((move) => {
         const { newPosition } = getNewPosition(piece, move, position)
@@ -76,51 +80,21 @@ const generatePositionsTree = (
           next: generatePositionsTree(
             turn === 'b' ? 'w' : 'b',
             newPosition,
-            depth - 1
+            depth - 1,
+            false
           )
         }
       })
     })
     .flat()
-}
-
-function flatten(input: TreeItem[]): TreeItem[][] {
-  // Initialize an empty array to store the output
-  const output: TreeItem[][] = []
-
-  // Define a helper function that takes an input element and an output element
-  // and recursively adds the input element and its children to the output element
-  function helper(inputElement: TreeItem, outputElement: TreeItem[]) {
-    // Add the input element to the output element
-    outputElement.push({
-      piece: inputElement.piece,
-      move: inputElement.move,
-      turn: inputElement.turn
-    })
-
-    // If the input element has no children, add the output element to the output array
-    if (inputElement.next?.length === 0) {
-      output.push(outputElement)
-    } else {
-      // Otherwise, loop through the children of the input element
-      for (const child of inputElement.next ?? []) {
-        // Make a copy of the output element
-        const newOutputElement = [...outputElement]
-
-        // Call the helper function with the child and the new output element
-        helper(child, newOutputElement)
-      }
-    }
+  const end = Date.now()
+  if (log) {
+    fileLog(
+      'generatePositionsTree',
+      `generation took ${end - start} ms and yielded ${result.length} positions`
+    )
   }
-
-  // Loop through the input array
-  for (const element of input) {
-    // Call the helper function with each element and an empty array
-    helper(element, [])
-  }
-
-  // Return the output array
-  return output
+  return result
 }
 
 export const calculateBestMoveV1 = ({

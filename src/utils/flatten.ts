@@ -1,4 +1,5 @@
 import { TreeItem } from 'types/Cell'
+import { fileLog } from './fileLog'
 
 export function flatten(input: TreeItem[]): TreeItem[][] {
   const start = Date.now()
@@ -38,7 +39,8 @@ export function flatten(input: TreeItem[]): TreeItem[][] {
 
   // Return the output array
   const end = Date.now()
-  console.log(
+  fileLog(
+    'flatten',
     `flatten took ${end - start} ms and yielded ${output.length} positions`
   )
   return output
