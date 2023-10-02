@@ -18,41 +18,14 @@ import {
   getIsWhiteKingCheckMated,
   getIsWhiteKingChecked
 } from 'utils/getChecks'
+import { parseFenPosition } from 'utils/parseFenPosition'
+import { initialPosition } from 'data/normalInitialPosition'
 
-const initialPosition: TCell[] = [
-  { square: 'a1', piece: 'wr' },
-  { square: 'b1', piece: 'wn' },
-  { square: 'c1', piece: 'wb' },
-  { square: 'd1', piece: 'wq' },
-  { square: 'e1', piece: 'wk' },
-  { square: 'f1', piece: 'wb' },
-  { square: 'g1', piece: 'wn' },
-  { square: 'h1', piece: 'wr' },
-  { square: 'a2', piece: 'wp' },
-  { square: 'b2', piece: 'wp' },
-  { square: 'c2', piece: 'wp' },
-  { square: 'd2', piece: 'wp' },
-  { square: 'e2', piece: 'wp' },
-  { square: 'f2', piece: 'wp' },
-  { square: 'g2', piece: 'wp' },
-  { square: 'h2', piece: 'wp' },
-  { square: 'a8', piece: 'br' },
-  { square: 'b8', piece: 'bn' },
-  { square: 'c8', piece: 'bb' },
-  { square: 'd8', piece: 'bq' },
-  { square: 'e8', piece: 'bk' },
-  { square: 'f8', piece: 'bb' },
-  { square: 'g8', piece: 'bn' },
-  { square: 'h8', piece: 'br' },
-  { square: 'a7', piece: 'bp' },
-  { square: 'b7', piece: 'bp' },
-  { square: 'c7', piece: 'bp' },
-  { square: 'd7', piece: 'bp' },
-  { square: 'e7', piece: 'bp' },
-  { square: 'f7', piece: 'bp' },
-  { square: 'g7', piece: 'bp' },
-  { square: 'h7', piece: 'bp' }
-]
+const positions = {
+  random: '8/3Pk3/2KN2r1/8/5n2/8/8/3R4 b - - 0 76',
+  stalemate: '3k4/3P4/3K4/8/8/8/8/7R'
+}
+const initPosition = parseFenPosition(positions.stalemate)
 
 const PositionContext = createContext<{
   position: TCell[]
@@ -67,6 +40,8 @@ const PositionContext = createContext<{
   isBlackKingInCheck: boolean
   isWhiteKingCheckMated: boolean
   isBlackKingCheckMated: boolean
+  isWhiteKingStaleMated: boolean
+  isBlackKingStaleMated: boolean
 }>({
   position: initialPosition,
   movePieceToCoordinate: () => {},
@@ -79,13 +54,14 @@ const PositionContext = createContext<{
   isWhiteKingInCheck: false,
   isBlackKingInCheck: false,
   isWhiteKingCheckMated: false,
-  isBlackKingCheckMated: false
+  isBlackKingCheckMated: false,
+  isWhiteKingStaleMated: false,
+  isBlackKingStaleMated: false
 })
 
 export const usePositionContext = () => useContext(PositionContext)
-
 export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
-  const [position, setPosition] = useState<TCell[]>(initialPosition)
+  const [position, setPosition] = useState<TCell[]>(initPosition)
   const [history, setHistory] = useState<HistoryItem[]>([])
   const [future, setFuture] = useState<HistoryItem[]>([])
   const [pgn, setPgn] = useState<string[]>([])
@@ -198,12 +174,20 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
   }, [position])
 
   const isWhiteKingCheckMated = useMemo(() => {
-    return getIsWhiteKingCheckMated({ position })
-  }, [position])
+    return getIsWhiteKingCheckMated({ position, turn })
+  }, [position, turn])
 
   const isBlackKingCheckMated = useMemo(() => {
-    return getIsBlackKingCheckMated({ position })
-  }, [position])
+    return getIsBlackKingCheckMated({ position, turn })
+  }, [position, turn])
+
+  const isWhiteKingStaleMated = useMemo(() => {
+    return getIsWhiteKingCheckMated({ position, type: 'stalemate', turn })
+  }, [position, turn])
+
+  const isBlackKingStaleMated = useMemo(() => {
+    return getIsBlackKingCheckMated({ position, type: 'stalemate', turn })
+  }, [position, turn])
 
   return (
     <PositionContext.Provider
@@ -219,7 +203,9 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
         isWhiteKingInCheck,
         isBlackKingInCheck,
         isWhiteKingCheckMated,
-        isBlackKingCheckMated
+        isBlackKingCheckMated,
+        isWhiteKingStaleMated,
+        isBlackKingStaleMated
       }}
     >
       {children}

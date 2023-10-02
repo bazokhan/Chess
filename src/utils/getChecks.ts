@@ -2,6 +2,7 @@ import { TCell } from 'types/Cell'
 import { isWhite } from './pieces'
 import { getAvailableMoves } from './getAvailableMoves'
 import { getSquare } from './getCoordinates'
+import { TPlayer } from './getPlayerEvaluation'
 
 export const getIsWhiteKingChecked = ({ position }: { position: TCell[] }) => {
   const blackPieces = position.filter((c) => !isWhite(c))
@@ -25,11 +26,17 @@ export const getIsBlackKingChecked = ({ position }: { position: TCell[] }) => {
   )
 }
 
+type TCheckType = 'checkmate' | 'stalemate'
 export const getIsWhiteKingCheckMated = ({
-  position
+  position,
+  turn,
+  type = 'checkmate'
 }: {
   position: TCell[]
+  turn: TPlayer
+  type?: TCheckType
 }) => {
+  if (turn !== 'w') return false
   const blackPieces = position.filter((c) => !isWhite(c))
   const whitePieces = position.filter((c) => isWhite(c))
   const whiteKing = position.find((c) => c.piece === 'wk')
@@ -43,14 +50,22 @@ export const getIsWhiteKingCheckMated = ({
     (m) => getSquare(m) === whiteKing?.square
   )
 
-  return isWhiteKingChecked && !allAvailableMovesForWhite.length
+  return (
+    (type === 'checkmate' ? isWhiteKingChecked : !isWhiteKingChecked) &&
+    !allAvailableMovesForWhite.length
+  )
 }
 
 export const getIsBlackKingCheckMated = ({
-  position
+  position,
+  turn,
+  type = 'checkmate'
 }: {
   position: TCell[]
+  turn: TPlayer
+  type?: TCheckType
 }) => {
+  if (turn !== 'b') return false
   const blackPieces = position.filter((c) => !isWhite(c))
   const whitePieces = position.filter((c) => isWhite(c))
   const blackKing = position.find((c) => c.piece === 'bk')
@@ -64,5 +79,8 @@ export const getIsBlackKingCheckMated = ({
     (m) => getSquare(m) === blackKing?.square
   )
 
-  return isBlackKingChecked && !allAvailableMovesForBlack.length
+  return (
+    (type === 'checkmate' ? isBlackKingChecked : !isBlackKingChecked) &&
+    !allAvailableMovesForBlack.length
+  )
 }

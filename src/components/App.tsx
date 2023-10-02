@@ -3,6 +3,7 @@ import { BoardProvider } from 'context/BoardContext'
 import { PositionProvider } from 'context/PositionContext'
 import { Layout } from './Layout'
 import { TurnProvider } from 'context/TurnContext'
+import { DebugProvider } from 'context/DebugContext'
 
 const App = () => {
   return (
@@ -10,9 +11,11 @@ const App = () => {
       <TurnProvider>
         <PositionProvider>
           <BoardProvider>
-            <Layout>
-              <Board />
-            </Layout>
+            <DebugProvider>
+              <Layout>
+                <Board />
+              </Layout>
+            </DebugProvider>
           </BoardProvider>
         </PositionProvider>
       </TurnProvider>

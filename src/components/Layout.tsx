@@ -14,6 +14,7 @@ import {
   getPlayerEvaluation,
   printMoves
 } from 'utils/getPlayerEvaluation'
+import { useDebugContext } from 'context/DebugContext'
 
 export const Layout: FC<PropsWithChildren> = ({ children }) => {
   const {
@@ -27,10 +28,14 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
     isWhiteKingInCheck,
     isBlackKingInCheck,
     isWhiteKingCheckMated,
-    isBlackKingCheckMated
+    isBlackKingCheckMated,
+    isWhiteKingStaleMated,
+    isBlackKingStaleMated
   } = usePositionContext()
 
   const { turn } = useTurnContext()
+
+  const { setTurnToBlack, setTurnToWhite } = useDebugContext()
 
   const handleAIPlay = useCallback(() => {
     const bestMove = turn === 'b' ? calculateBestMove({ turn, position }) : null
@@ -48,7 +53,7 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
     >
       {children}
       <div className="flex flex-col bg-[#383734] p-4 text-[#9c9b9a]">
-        <div className="h-full">
+        <div className="h-full max-h-[200px] overflow-y-auto">
           {pgn?.map((item) => (
             <p key={item} className="text-sm text-white">
               {item}
@@ -56,14 +61,36 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
           ))}
         </div>
 
+        <div className="flex w-full text-3xl font-black">
+          <button
+            className="flex w-full items-center justify-center text-black"
+            onClick={setTurnToBlack}
+            disabled={turn === 'b'}
+          >
+            <FaChessPawn />
+          </button>
+          <button
+            className="flex w-full items-center justify-center text-white"
+            onClick={setTurnToWhite}
+            disabled={turn === 'w'}
+          >
+            <FaChessPawn />
+          </button>
+        </div>
+
         {isWhiteKingCheckMated ? (
           <p className="w-full p-2 text-center font-black text-green-500">
-            CHECK MATE - Black Wins!
+            CHECKMATE - Black Wins!
           </p>
         ) : null}
         {isBlackKingCheckMated ? (
           <p className="w-full p-2 text-center font-black text-green-500">
-            CHECK MATE - White Wins!
+            CHECKMATE - White Wins!
+          </p>
+        ) : null}
+        {isWhiteKingStaleMated || isBlackKingStaleMated ? (
+          <p className="w-full p-2 text-center font-black text-green-500">
+            STALEMATE - Draw!
           </p>
         ) : null}
 
