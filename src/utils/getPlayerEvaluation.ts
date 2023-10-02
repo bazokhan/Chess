@@ -63,11 +63,9 @@ export const generatePositionsTree = (
   const nextMoves = generateAllNextMoves(turn, position)
   let total = 0
   const result = nextMoves
-    .map(({ piece, moves }, x) => {
-      const result = moves.map((move, y) => {
-        const innerStart = Date.now()
+    .map(({ piece, moves }) => {
+      const result = moves.map((move) => {
         const { newPosition } = getNewPosition(piece, move, position)
-        const innerAfterGeneration = Date.now()
         const res = {
           piece,
           move,
@@ -80,17 +78,7 @@ export const generatePositionsTree = (
             false
           )
         }
-        const time = Date.now() - innerStart
-        const secondPart = Date.now() - innerAfterGeneration
-        if (time >= 100) {
-          console.log(
-            `[${x},${y}]: this round for ${piece.piece} at ${
-              piece.square
-            } moves took ${time} ms, the first part took ${
-              innerAfterGeneration - innerStart
-            } ms, the second took ${secondPart} ms`
-          )
-        }
+
         return res
       })
 

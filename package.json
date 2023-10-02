@@ -19,7 +19,8 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "lint": "eslint src --max-warnings=0",
-    "typecheck": "tsc --project tsconfig.json --noEmit"
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "run-game": "pnpx esbuild ./src/scripts/botMatch.ts --outfile=./dist/scripts/botMatch.js --bundle --platform=node --target=node18 && node ./dist/scripts/botMatch.js"
   },
   "dependencies": {
     "react": "^18.2.0",
