@@ -1,3 +1,4 @@
+import { TPlayer } from 'utils/getPlayerEvaluation'
 import { TPiece, TSquare } from './Board'
 
 export type TCell = { square: TSquare; piece: TPiece; moved?: boolean }
@@ -13,3 +14,12 @@ export type TCoordinate = {
 }
 
 export type TPromotion = 'Q' | 'R' | 'B' | 'N'
+
+export type TreeItem = {
+  piece: TCell
+  move: TCoordinate
+  turn: TPlayer
+  next?: TreeItem[]
+}
+
+export type TPosition = Record<TSquare, TCell>
