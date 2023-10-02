@@ -1,14 +1,16 @@
-import { TCell, TCoordinate } from 'types/Cell'
+import { TSquare } from 'types/Board'
+import { TCell, TCoordinate, TPosition } from 'types/Cell'
+import { fileLog } from 'utils/fileLog'
 import { getCoordinates, getSquare } from 'utils/getCoordinates'
 import { isWhite } from 'utils/pieces'
-import { checkIsSquareEmpty, getRankSquaresBetween } from 'utils/position'
+import { getRankSquaresBetween } from 'utils/position'
 
 export const getKingAvailableMoves = ({
   piece,
-  position = []
+  position = {} as TPosition
 }: {
   piece: TCell
-  position?: TCell[]
+  position?: TPosition
 }) => {
   const { x, y } = getCoordinates(piece.square)
   const moves: TCoordinate[] = []
@@ -27,7 +29,7 @@ export const getKingAvailableMoves = ({
       y: y + 1 * yDirection
     }
     const square = getSquare(newCoordinate)
-    const targetPiece = position.find((cell) => cell.square === square)
+    const targetPiece = position[square]
     const isSamePlayer = targetPiece?.piece[0] === piece.piece[0]
     if (targetPiece) {
       if (!isSamePlayer) {
@@ -49,15 +51,13 @@ export const getKingAvailableMoves = ({
         { square: 'a8', piece: 'br' },
         { square: 'h8', piece: 'br' }
       ]
-  const rooksInPosition = position.filter(
-    (c) =>
-      !!rooks.find(
-        (r) => r.square === c.square && r.piece === c.piece && !c.moved
-      )
-  )
+  const rooksInPosition = rooks
+    .map((r) => position[r.square as TSquare])
+    .filter(Boolean)
+    .filter((r) => r.piece[1] === 'r' && !r.moved)
   const validRooks = rooksInPosition.filter((r) =>
-    getRankSquaresBetween(r.square, piece.square).every((square) =>
-      checkIsSquareEmpty(square, position)
+    getRankSquaresBetween(r.square, piece.square).every(
+      (square) => !position[square]
     )
   )
   if (!piece.moved && validRooks?.length) {
@@ -73,6 +73,6 @@ export const getKingAvailableMoves = ({
       })
     })
   }
-
+  fileLog('moves', `King moves: ${moves.length}`)
   return moves
 }

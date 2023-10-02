@@ -7,7 +7,7 @@ import {
   useMemo,
   useState
 } from 'react'
-import { TCell, TCoordinate, TPromotion } from 'types/Cell'
+import { TCell, TCoordinate, TPosition, TPromotion } from 'types/Cell'
 import { AnimationRecord, HistoryItem } from 'types/History'
 import { encodePgn } from 'utils/encodePgn'
 import { useTurnContext } from './TurnContext'
@@ -48,6 +48,7 @@ const PositionContext = createContext<{
   isGameOver: boolean
   setPromotionType: (promotionType: TPromotion) => void
   promotionType: TPromotion
+  hashedPosition: TPosition
 }>({
   position: initialPosition,
   movePieceToCoordinate: () => {},
@@ -65,7 +66,8 @@ const PositionContext = createContext<{
   isBlackKingStaleMated: false,
   isGameOver: false,
   setPromotionType: () => {},
-  promotionType: 'Q'
+  promotionType: 'Q',
+  hashedPosition: {} as TPosition
 })
 
 export const usePositionContext = () => useContext(PositionContext)
@@ -99,14 +101,18 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
   }
 
   const movePieces = (cellsAndCoordinates: [TCell, TCoordinate][]) => {
-    let initial = position
+    let initial = hashedPosition
     const moves: HistoryItem[] = []
     cellsAndCoordinates.forEach(([cell, coordinate]) => {
-      const { move, newPosition } = getNewPosition(cell, coordinate, initial)
+      const { move, hashedPosition: newPosition } = getNewPosition(
+        cell,
+        coordinate,
+        initial
+      )
       initial = newPosition
       moves.push(move)
     })
-    return { moves, newPosition: initial }
+    return { moves, newPosition: Object.values(initial) }
   }
 
   const movePieceToCoordinate = async (
@@ -135,7 +141,11 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
       setPosition(newPosition)
       return { success: true, position: newPosition }
     } else {
-      const { move, newPosition } = getNewPosition(cell, coordinate, position)
+      const { move, newPosition } = getNewPosition(
+        cell,
+        coordinate,
+        hashedPosition
+      )
       if (!skipHistory) {
         setHistory([...history, move])
         setPgn(encodePgn(pgn, move))
@@ -178,29 +188,46 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
     }
   }
 
-  const isWhiteKingInCheck = useMemo(() => {
-    return getIsWhiteKingChecked({ position })
+  const hashedPosition = useMemo(() => {
+    return position.reduce((acc, cell) => {
+      acc[cell.square] = cell
+      return acc
+    }, {} as TPosition)
   }, [position])
+
+  const isWhiteKingInCheck = useMemo(() => {
+    return getIsWhiteKingChecked({ position, hashedPosition })
+  }, [position, hashedPosition])
 
   const isBlackKingInCheck = useMemo(() => {
-    return getIsBlackKingChecked({ position })
-  }, [position])
+    return getIsBlackKingChecked({ position, hashedPosition })
+  }, [position, hashedPosition])
 
   const isWhiteKingCheckMated = useMemo(() => {
-    return getIsWhiteKingCheckMated({ position, turn })
-  }, [position, turn])
+    return getIsWhiteKingCheckMated({ position, turn, hashedPosition })
+  }, [position, turn, hashedPosition])
 
   const isBlackKingCheckMated = useMemo(() => {
-    return getIsBlackKingCheckMated({ position, turn })
-  }, [position, turn])
+    return getIsBlackKingCheckMated({ position, turn, hashedPosition })
+  }, [position, turn, hashedPosition])
 
   const isWhiteKingStaleMated = useMemo(() => {
-    return getIsWhiteKingCheckMated({ position, type: 'stalemate', turn })
-  }, [position, turn])
+    return getIsWhiteKingCheckMated({
+      position,
+      type: 'stalemate',
+      turn,
+      hashedPosition
+    })
+  }, [position, turn, hashedPosition])
 
   const isBlackKingStaleMated = useMemo(() => {
-    return getIsBlackKingCheckMated({ position, type: 'stalemate', turn })
-  }, [position, turn])
+    return getIsBlackKingCheckMated({
+      position,
+      type: 'stalemate',
+      turn,
+      hashedPosition
+    })
+  }, [position, turn, hashedPosition])
 
   const isGameOver =
     isWhiteKingCheckMated ||
@@ -227,7 +254,8 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
         isBlackKingStaleMated,
         isGameOver,
         promotionType,
-        setPromotionType
+        setPromotionType,
+        hashedPosition
       }}
     >
       {children}

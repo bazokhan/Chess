@@ -1,13 +1,13 @@
-import { TCell, TCoordinate } from 'types/Cell'
+import { TCell, TCoordinate, TPosition } from 'types/Cell'
 import { getCoordinates, getSquare } from 'utils/getCoordinates'
 import { isWhite } from 'utils/pieces'
 
 export const getPawnAvailableMoves = ({
   piece,
-  position = []
+  position = {} as TPosition
 }: {
   piece: TCell
-  position?: TCell[]
+  position?: TPosition
 }) => {
   const { x, y } = getCoordinates(piece.square)
   const moves: TCoordinate[] = []
@@ -22,7 +22,7 @@ export const getPawnAvailableMoves = ({
       y: y + delta * yDirection
     }
     const square = getSquare(newCoordinate)
-    const targetPiece = position.find((cell) => cell.square === square)
+    const targetPiece = position[square]
     if (targetPiece) {
       break
     }
@@ -40,7 +40,7 @@ export const getPawnAvailableMoves = ({
       y: y + yDirection
     }
     const square = getSquare(newCoordinate)
-    const targetPiece = position.find((cell) => cell.square === square)
+    const targetPiece = position[square]
     const isSamePlayer = targetPiece?.piece[0] === piece.piece[0]
     if (targetPiece && !isSamePlayer) {
       moves.push(newCoordinate)

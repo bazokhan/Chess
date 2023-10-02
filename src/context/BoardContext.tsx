@@ -36,7 +36,7 @@ export const BoardProvider: FC<PropsWithChildren> = ({ children }) => {
   const [highlightedCoordinates, setHighlightedCoordinates] = useState<
     TCoordinate[]
   >([])
-  const { position, isGameOver } = usePositionContext()
+  const { position, hashedPosition, isGameOver } = usePositionContext()
   const toggleHighlight = (cell: TCoordinate) => {
     if (highlightedCoordinates.find((c) => c.x === cell.x && c.y === cell.y)) {
       setHighlightedCoordinates(
@@ -50,8 +50,8 @@ export const BoardProvider: FC<PropsWithChildren> = ({ children }) => {
   const availableMoves = useMemo(() => {
     if (isGameOver) return []
     if (!activeCell) return []
-    return getAvailableMoves(activeCell, position)
-  }, [activeCell, isGameOver, position])
+    return getAvailableMoves(activeCell, hashedPosition, position)
+  }, [isGameOver, activeCell, hashedPosition, position])
   const activeCoordinates = activeCell
     ? getCoordinates(activeCell.square)
     : null

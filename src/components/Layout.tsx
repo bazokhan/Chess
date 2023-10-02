@@ -24,6 +24,7 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
     history,
     pgn,
     position,
+    hashedPosition,
     isWhiteKingInCheck,
     isBlackKingInCheck,
     isWhiteKingCheckMated,
@@ -119,11 +120,13 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
           </p>
         ) : null}
 
-        {printMoves(generateAllNextMoves(turn, position)).map((text) => (
-          <p key={text} className="m-0 w-full px-2 py-0 text-xs">
-            {text}
-          </p>
-        ))}
+        {printMoves(generateAllNextMoves(turn, hashedPosition, position)).map(
+          (text) => (
+            <p key={text} className="m-0 w-full px-2 py-0 text-xs">
+              {text}
+            </p>
+          )
+        )}
 
         <p className="w-full p-2 text-center">
           White Evaluation: {getPlayerEvaluation('w', position)}

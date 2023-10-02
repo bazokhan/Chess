@@ -1,7 +1,9 @@
-import { TCell, TCoordinate } from 'types/Cell'
+import { TCell, TCoordinate, TPosition, TreeItem } from 'types/Cell'
 import { getAvailableMoves } from './getAvailableMoves'
 import { getSquare } from './getCoordinates'
 import { getNewPosition } from './position'
+import { flatten } from './flatten'
+import { fileLog } from './fileLog'
 
 export type TPlayer = 'w' | 'b'
 
@@ -40,142 +42,141 @@ export const printMoves = (
   )
 }
 
-export const generateAllNextMoves = (player: TPlayer, position: TCell[]) => {
+export const generateAllNextMoves = (
+  player: TPlayer,
+  hashedPosition: TPosition,
+  position: TCell[]
+) => {
+  const start = Date.now()
   const ownPieces = position.filter((c) => c.piece.startsWith(player))
   const availableMoves = ownPieces
     .map((piece) => {
-      const moves = getAvailableMoves(piece, position)
+      const moves = getAvailableMoves(piece, hashedPosition, position)
       return { piece, moves }
     })
     .filter((m) => m.moves.length)
+  const end = Date.now()
+  fileLog('generateAllNextMoves', `generation took ${end - start} ms`)
   return availableMoves
 }
 
-type TreeItem = {
-  piece: TCell
-  move: TCoordinate
-  turn: TPlayer
-  next?: TreeItem[]
-}
-
-const generatePositionsTree = (
+export const generatePositionsTree = (
   turn: TPlayer,
+  hashedPosition: TPosition,
   position: TCell[],
-  depth: number
+  depth: number,
+  log = true
 ): TreeItem[] => {
   if (!depth) return []
-  const nextMoves = generateAllNextMoves(turn, position)
-  return nextMoves
+  const start = Date.now()
+  const nextMoves = generateAllNextMoves(turn, hashedPosition, position)
+  const res = nextMoves
     .map(({ piece, moves }) => {
       return moves.map((move) => {
-        const { newPosition } = getNewPosition(piece, move, position)
+        const { newPosition, hashedPosition: newHashed } = getNewPosition(
+          piece,
+          move,
+          hashedPosition
+        )
         return {
           piece,
           move,
           turn,
           next: generatePositionsTree(
             turn === 'b' ? 'w' : 'b',
+            newHashed,
             newPosition,
-            depth - 1
+            depth - 1,
+            false
           )
         }
       })
     })
     .flat()
-}
-
-function flatten(input: TreeItem[]): TreeItem[][] {
-  // Initialize an empty array to store the output
-  const output: TreeItem[][] = []
-
-  // Define a helper function that takes an input element and an output element
-  // and recursively adds the input element and its children to the output element
-  function helper(inputElement: TreeItem, outputElement: TreeItem[]) {
-    // Add the input element to the output element
-    outputElement.push({
-      piece: inputElement.piece,
-      move: inputElement.move,
-      turn: inputElement.turn
-    })
-
-    // If the input element has no children, add the output element to the output array
-    if (inputElement.next?.length === 0) {
-      output.push(outputElement)
-    } else {
-      // Otherwise, loop through the children of the input element
-      for (const child of inputElement.next ?? []) {
-        // Make a copy of the output element
-        const newOutputElement = [...outputElement]
-
-        // Call the helper function with the child and the new output element
-        helper(child, newOutputElement)
-      }
-    }
+  const end = Date.now()
+  if (log) {
+    fileLog('generatePositionsTree', `generation took ${end - start} ms`)
   }
-
-  // Loop through the input array
-  for (const element of input) {
-    // Call the helper function with each element and an empty array
-    helper(element, [])
-  }
-
-  // Return the output array
-  return output
+  return res
 }
 
 export const calculateBestMoveV1 = ({
   turn,
+  hashedPosition,
   position,
-  depth = 3
+  depth = 3,
+  time = 2000
 }: {
   turn: TPlayer
+  hashedPosition: TPosition
   position: TCell[]
   depth?: number
+  time?: number
 }): TreeItem | null => {
   const before = Date.now()
-  const lines = flatten(generatePositionsTree(turn, position, depth))
-
-  const hashedDeltas: Record<
-    string,
-    { delta: number; move: TreeItem; line: TreeItem[] }
-  > = {} as Record<string, { delta: number; move: TreeItem; line: TreeItem[] }>
-
-  lines.forEach((line) => {
-    let originalPosition = position
-
-    line.forEach(({ piece, move }) => {
-      originalPosition = getNewPosition(
-        piece,
-        move,
-        originalPosition
-      ).newPosition
-      const id = line[0].piece.square + '-' + getSquare(move)
-      const selfEvaluation = getPlayerEvaluation(turn, originalPosition)
-      const opponentEvaluation = getPlayerEvaluation(
-        turn === 'w' ? 'b' : 'w',
-        originalPosition
-      )
-      const deltaEvaluation = selfEvaluation - opponentEvaluation
-
-      const thisLine = deltaEvaluation > hashedDeltas[id]?.delta ?? 0
-
-      hashedDeltas[id] = {
-        delta: Math.min(deltaEvaluation, hashedDeltas[id]?.delta ?? 0),
-        move: line[0],
-        line: thisLine ? line : hashedDeltas[id]?.line
-      }
-    })
-  })
-
-  const after = Date.now()
-  console.log(
-    `calculated ${lines?.length ?? 0} lines at depth ${depth} in ${
-      after - before
-    }ms`
+  const lines = flatten(
+    generatePositionsTree(turn, hashedPosition, position, depth)
   )
+  let bestMove: TreeItem | null = null
 
-  const valuesSorted = Object.values(hashedDeltas)
-    .filter((l) => !!l.line)
-    .sort((a, b) => b.delta - a.delta)
-  return valuesSorted[0].move
+  let start = Date.now()
+  let initialDepth = 1
+  let limit = Infinity
+  while (start < limit && initialDepth <= depth) {
+    const hashedDeltas: Record<
+      string,
+      { delta: number; move: TreeItem; line: TreeItem[] }
+    > = {} as Record<
+      string,
+      { delta: number; move: TreeItem; line: TreeItem[] }
+    >
+
+    lines.forEach((line) => {
+      if (Date.now() > limit) return bestMove
+      let originalPosition = hashedPosition
+
+      line.forEach(({ piece, move }) => {
+        originalPosition = getNewPosition(
+          piece,
+          move,
+          originalPosition
+        ).hashedPosition
+        const id = line[0].piece.square + '-' + getSquare(move)
+        const selfEvaluation = getPlayerEvaluation(
+          turn,
+          Object.values(originalPosition)
+        )
+        const opponentEvaluation = getPlayerEvaluation(
+          turn === 'w' ? 'b' : 'w',
+          Object.values(originalPosition)
+        )
+        const deltaEvaluation = selfEvaluation - opponentEvaluation
+
+        const thisLine = deltaEvaluation > hashedDeltas[id]?.delta ?? 0
+
+        hashedDeltas[id] = {
+          delta: Math.min(deltaEvaluation, hashedDeltas[id]?.delta ?? 0),
+          move: line[0],
+          line: thisLine ? line : hashedDeltas[id]?.line
+        }
+      })
+    })
+
+    const valuesSorted = Object.values(hashedDeltas)
+      .filter((l) => !!l.line)
+      .sort((a, b) => b.delta - a.delta)
+    bestMove = valuesSorted[0].move
+
+    const after = Date.now()
+
+    console.log(
+      `calculated ${lines?.length ?? 0} lines at depth ${initialDepth} in ${
+        after - before
+      }ms and the limit was ${limit}`
+    )
+    start += after
+    initialDepth += 1
+    limit = before + time
+  }
+  return bestMove
 }

@@ -1,4 +1,4 @@
-import { TCell, TCoordinate } from 'types/Cell'
+import { TCell, TCoordinate, TPosition } from 'types/Cell'
 import { getBishopAvailableMoves } from './moves/bishop'
 import { getRockAvailableMoves } from './moves/rock'
 import { getQueenAvailableMoves } from './moves/queen'
@@ -15,20 +15,22 @@ const validateNotCheckedKing = (
   kingColor: TPlayer,
   move: TCoordinate,
   activeCell: TCell | null,
+  hashedPosition?: TPosition,
   position?: TCell[]
 ) => {
-  if (!activeCell || !position) return false
-  const { newPosition } = getNewPosition(activeCell, move, position)
+  if (!activeCell || !position || !hashedPosition) return false
+  const { newPosition } = getNewPosition(activeCell, move, hashedPosition)
   const isChecked =
     kingColor === 'w'
-      ? getIsWhiteKingChecked({ position: newPosition })
-      : getIsBlackKingChecked({ position: newPosition })
+      ? getIsWhiteKingChecked({ position: newPosition, hashedPosition })
+      : getIsBlackKingChecked({ position: newPosition, hashedPosition })
   return !isChecked
 }
 
 export const getAvailableMoves = (
   activeCell: TCell | null,
-  position?: TCell[],
+  position?: TPosition,
+  positionArr?: TCell[],
   skipFilteringByChecks: boolean = false
 ): TCoordinate[] => {
   if (!activeCell) return []
@@ -79,7 +81,8 @@ export const getAvailableMoves = (
             activeCell.piece[0] as TPlayer,
             m,
             activeCell,
-            position
+            position,
+            positionArr
           )
     )
 }

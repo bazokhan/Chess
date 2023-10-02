@@ -32,7 +32,8 @@ export const useDebugContext = () => useContext(DebugContext)
 
 export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
   const { setTurn, turn } = useTurnContext()
-  const { position, movePieceToCoordinate, isGameOver } = usePositionContext()
+  const { position, movePieceToCoordinate, isGameOver, hashedPosition } =
+    usePositionContext()
   const [forceStop, setForceStop] = useState(true)
   const [moveNumber, setMoveNumber] = useState(0)
   const moveRef = useRef(-1)
@@ -42,14 +43,16 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
   const handleAIPlay = useCallback(
     async (playerTurn?: TPlayer) => {
       const bestMove = calculateBestMoveV1({
+        hashedPosition,
         turn: playerTurn ?? turn,
         position
       })
+      console.log(bestMove)
       if (bestMove) {
         await movePieceToCoordinate(bestMove.piece, bestMove.move)
       }
     },
-    [movePieceToCoordinate, position, turn]
+    [hashedPosition, movePieceToCoordinate, position, turn]
   )
 
   const runMatch = async () => {}

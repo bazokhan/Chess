@@ -1,12 +1,12 @@
-import { TCell, TCoordinate } from 'types/Cell'
+import { TCell, TCoordinate, TPosition } from 'types/Cell'
 import { getCoordinates, getSquare } from 'utils/getCoordinates'
 
 export const getQueenAvailableMoves = ({
   piece,
-  position = []
+  position = {} as TPosition
 }: {
   piece: TCell
-  position?: TCell[]
+  position?: TPosition
 }) => {
   const { x, y } = getCoordinates(piece.square)
   const moves: TCoordinate[] = []
@@ -26,7 +26,7 @@ export const getQueenAvailableMoves = ({
         y: y + delta * yDirection
       }
       const square = getSquare(newCoordinate)
-      const targetPiece = position.find((cell) => cell.square === square)
+      const targetPiece = position[square]
       const isSamePlayer = targetPiece?.piece[0] === piece.piece[0]
       if (targetPiece) {
         if (!isSamePlayer) {

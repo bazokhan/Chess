@@ -1,5 +1,5 @@
 import { TPiece, TSquare } from 'types/Board'
-import { TCell, TCoordinate, TPromotion } from 'types/Cell'
+import { TCell, TCoordinate, TPosition, TPromotion } from 'types/Cell'
 import { getCoordinates, getSquare } from './getCoordinates'
 import { HistoryItem } from 'types/History'
 
@@ -21,10 +21,9 @@ export const getRankSquaresBetween = (square1: TSquare, square2: TSquare) => {
 export const getNewPosition = (
   cell: TCell,
   coordinate: TCoordinate,
-  position: TCell[],
+  position: TPosition,
   promotionType: TPromotion = 'Q'
 ) => {
-  const cellIndex = position.findIndex((c) => c.square === cell.square)
   const oldCoordinates = getCoordinates(cell.square)
   const newSquare = getSquare(coordinate)
 
@@ -41,17 +40,19 @@ export const getNewPosition = (
     newCell,
     coordinates: [oldCoordinates, coordinate]
   }
-  let newPosition = [...position]
-  newPosition.splice(cellIndex, 1)
-  newPosition.push(newCell)
-
-  const alreadyHasPiece = position.find((c) => c.square === newSquare)
-
+  const newPosition = { ...position }
+  const alreadyHasPiece = position[newSquare]
   // Capture
   if (alreadyHasPiece) {
     move.capturedCell = alreadyHasPiece
-    newPosition = newPosition.filter((c) => c !== alreadyHasPiece)
   }
+  newPosition[newSquare] = newCell
 
-  return { move, newPosition, newSquare, newCell }
+  return {
+    move,
+    newPosition: Object.values(newPosition),
+    newSquare,
+    newCell,
+    hashedPosition: newPosition
+  }
 }
