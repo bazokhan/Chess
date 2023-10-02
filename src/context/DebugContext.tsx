@@ -53,20 +53,11 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
   const handleAIPlay = useCallback(
     async (playerTurn?: TPlayer) => {
       const fn = playerTurn === 'b' ? calculateBestMoveV1 : calculateBestMoveV2
-      console.log(
-        `${playerTurn?.toUpperCase()}'s turn: using V${fn.name.at(-1)}`
-      )
+
       const bestMove = fn({
         turn: playerTurn ?? turn,
         position
       })
-
-      console.log(
-        `Best move for ${playerTurn?.toUpperCase()} was evaluated at ${
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (bestMove as any)?.evaluation ?? (bestMove as any)?.delta
-        }`
-      )
 
       if (bestMove) {
         await movePieceToCoordinate({

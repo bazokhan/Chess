@@ -61,7 +61,6 @@ export const generatePositionsTree = (
   if (!depth) return []
   const start = Date.now()
   const nextMoves = generateAllNextMoves(turn, position)
-  let total = 0
   const result = nextMoves
     .map(({ piece, moves }) => {
       const result = moves.map((move) => {
@@ -82,16 +81,11 @@ export const generatePositionsTree = (
         return res
       })
 
-      total += moves.length
       return result
     })
     .flat()
   const end = Date.now()
-  if (end - start > 10000) {
-    console.log(
-      `there was a total of ${total} moves assessed for this position`
-    )
-  }
+
   if (log) {
     fileLog(
       'generatePositionsTree',

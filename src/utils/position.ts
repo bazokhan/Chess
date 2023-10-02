@@ -51,7 +51,6 @@ export const getNewPosition = (
     return cache[id]
   }
   const hashed = hash(position)
-  const start = Date.now()
   const oldCoordinates = getCoordinates(cell.square)
   const newSquare = getSquare(coordinate)
 
@@ -76,16 +75,6 @@ export const getNewPosition = (
   }
   delete newPosition[cell.square]
   newPosition[newSquare] = newCell
-
-  const end = Date.now()
-  const time = end - start
-  if (time > 10000) {
-    console.log(
-      `moving ${cell.piece} from ${cell.square} to ${getSquare(
-        coordinate
-      )} took ${time} ms`
-    )
-  }
 
   const result = {
     move,

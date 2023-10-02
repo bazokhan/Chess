@@ -16,19 +16,12 @@ const validateNotCheckedKing = (
   position?: TCell[]
 ) => {
   if (!activeCell || !position) return false
-  const start = Date.now()
   const { newPosition } = getNewPosition(activeCell, move, position)
   const isChecked =
     kingColor === 'w'
       ? getIsWhiteKingChecked({ position: newPosition })
       : getIsBlackKingChecked({ position: newPosition })
-  const end = Date.now()
-  const time = end - start
-  if (time > 10000) {
-    console.log(
-      `this ${activeCell.piece} at ${activeCell.square} took ${time} ms`
-    )
-  }
+
   return !isChecked
 }
 

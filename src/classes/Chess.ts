@@ -1,7 +1,7 @@
 import { initialPosition } from 'data/normalInitialPosition'
 import { TCell, TCoordinate, TPosition } from 'types/Cell'
 import { HistoryItem } from 'types/History'
-import { calculateBestMoveV1 } from 'utils/engines/v1'
+// import { calculateBestMoveV1 } from 'utils/engines/v1'
 import { calculateBestMoveV2 } from 'utils/engines/v2'
 import { fileLog } from 'utils/fileLog'
 import {
@@ -17,8 +17,10 @@ export class Chess {
   position: TCell[]
   turn: TPlayer
   moveNumber: number
-  constructor() {
-    console.log('Initializing..')
+  id: string | number
+  constructor(id: string | number) {
+    console.log(`Initializing game #${id}`)
+    this.id = id
     this.position = initialPosition
     this.turn = 'w'
     this.moveNumber = 0
@@ -153,19 +155,12 @@ export class Chess {
   }
 
   private async handleAIPlay(playerTurn?: TPlayer) {
-    const fn = playerTurn === 'b' ? calculateBestMoveV1 : calculateBestMoveV2
-    console.log(`${playerTurn?.toUpperCase()}'s turn: using V${fn.name.at(-1)}`)
+    // const fn = playerTurn === 'b' ? calculateBestMoveV1 : calculateBestMoveV2
+    const fn = calculateBestMoveV2
     const bestMove = fn({
       turn: playerTurn ?? this.turn,
       position: this.position
     })
-
-    console.log(
-      `Best move for ${playerTurn?.toUpperCase()} was evaluated at ${
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (bestMove as any)?.evaluation ?? (bestMove as any)?.delta
-      }`
-    )
 
     if (bestMove) {
       await this.movePieceToCoordinate({
@@ -178,15 +173,15 @@ export class Chess {
   }
 
   async runMatch() {
-    console.log('Game starting..')
+    const start = Date.now()
+    console.log(`Game ${this.id} starting at ${new Date().toLocaleString()}..`)
 
     while (!this.isGameOver && this.moveNumber < 200) {
       await this.handleAIPlay(this.turn)
       this.moveNumber += 1
-      console.log(`Move: ${this.moveNumber}`)
-      fileLog('Games', `Move: ${this.moveNumber}`)
     }
 
+    const end = Date.now()
     let logText = this.isBlackKingCheckMated
       ? 'White won by checkmate'
       : this.isWhiteKingCheckMated
@@ -197,7 +192,16 @@ export class Chess {
       ? 'Game ended due to exceeding move limit'
       : 'Unknown status'
     logText += `final position is ${JSON.stringify(this.position, null, 2)}`
-    console.log(`Game over in ${this.moveNumber} moves. ${logText}.`)
-    fileLog('Games', `Game over in ${this.moveNumber} moves. ${logText}.`)
+    console.log(
+      `Game over at ${new Date().toLocaleString()} in ${
+        this.moveNumber
+      } moves. ${logText}. Game took ${((end - start) / 1000).toFixed(
+        2
+      )} seconds`
+    )
+    fileLog(
+      'Games',
+      `Game #${this.id} over in ${this.moveNumber} moves. ${logText}.`
+    )
   }
 }

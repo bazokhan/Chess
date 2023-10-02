@@ -9,7 +9,6 @@ export const getPawnAvailableMoves = ({
   piece: TCell
   position: TPosition
 }) => {
-  const start = Date.now()
   const { x, y } = getCoordinates(piece.square)
   const moves: TCoordinate[] = []
   const isWhitePiece = isWhite(piece)
@@ -53,11 +52,6 @@ export const getPawnAvailableMoves = ({
     ) {
       moves.push(newCoordinate)
     }
-  }
-  const end = Date.now()
-  const time = end - start
-  if (piece.piece === 'wp' && time > 100) {
-    console.log(`this white pawn at ${piece.square} took ${time} ms`)
   }
 
   return moves

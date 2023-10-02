@@ -1,5 +1,8 @@
 import { Chess } from 'classes/Chess'
 
-const game = new Chess()
+const GAMES_COUNT = 10
 
-game.runMatch()
+for (let i = 0; i < GAMES_COUNT; i += 1) {
+  const game = new Chess(i)
+  game.runMatch()
+}
