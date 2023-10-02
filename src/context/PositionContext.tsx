@@ -32,7 +32,19 @@ const initPosition = parseFenPosition(positions.normal)
 
 const PositionContext = createContext<{
   position: TCell[]
-  movePieceToCoordinate: (cell: TCell, coordinate: TCoordinate) => void
+  movePieceToCoordinate: ({
+    cell,
+    coordinate,
+    skipHistory = false,
+    skipAnimation = false,
+    skipToggleTurn = false
+  }: {
+    cell: TCell
+    coordinate: TCoordinate
+    skipHistory?: boolean
+    skipAnimation?: boolean
+    skipToggleTurn?: boolean
+  }) => void
   history: HistoryItem[]
   animate: AnimationRecord
   moveBackInHistory: () => void
@@ -49,6 +61,7 @@ const PositionContext = createContext<{
   setPromotionType: (promotionType: TPromotion) => void
   promotionType: TPromotion
   hPosition: TPosition
+  resetPosition: () => void
 }>({
   position: initialPosition,
   movePieceToCoordinate: () => {},
@@ -67,7 +80,8 @@ const PositionContext = createContext<{
   isGameOver: false,
   setPromotionType: () => {},
   promotionType: 'Q',
-  hPosition: {} as TPosition
+  hPosition: {} as TPosition,
+  resetPosition: () => {}
 })
 
 export const usePositionContext = () => useContext(PositionContext)
@@ -78,6 +92,8 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
   const [pgn, setPgn] = useState<string[]>([])
   const [animate, setAnimate] = useState<AnimationRecord>({})
   const [promotionType, setPromotionType] = useState<TPromotion>('Q')
+
+  const resetPosition = () => setPosition(initPosition)
 
   const { turn, toggleTurn } = useTurnContext()
   const tween = async (
@@ -111,16 +127,24 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
     return { moves, newPosition: initial }
   }
 
-  const movePieceToCoordinate = async (
-    cell: TCell,
-    coordinate: TCoordinate,
-    skipHistory: boolean = false
-  ) => {
+  const movePieceToCoordinate = async ({
+    cell,
+    coordinate,
+    skipHistory = false,
+    skipAnimation = false,
+    skipToggleTurn = false
+  }: {
+    cell: TCell
+    coordinate: TCoordinate
+    skipHistory?: boolean
+    skipAnimation?: boolean
+    skipToggleTurn?: boolean
+  }) => {
     const turnToConsider = skipHistory ? cell.piece[0] : turn
     // Not their turn
     if (cell.piece[0] !== turnToConsider) return { success: false, position }
 
-    if (!skipHistory) {
+    if (!skipToggleTurn) {
       toggleTurn()
     }
     // Castle
@@ -133,7 +157,9 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
         [cell, coordinate],
         [coordinate.relatedPiece, coordinate.relatedCoordinates]
       ])
-      await tween(moves.map((m) => [m.oldCell, m.coordinates]))
+      if (!skipAnimation) {
+        await tween(moves.map((m) => [m.oldCell, m.coordinates]))
+      }
       setPosition(newPosition)
       return { success: true, position: newPosition }
     } else {
@@ -142,7 +168,9 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
         setHistory([...history, move])
         setPgn(encodePgn(pgn, move))
       }
-      await tween([[cell, move.coordinates]])
+      if (!skipAnimation) {
+        await tween([[cell, move.coordinates]])
+      }
       setPosition(newPosition)
       return { success: true, position: newPosition }
     }
@@ -153,11 +181,12 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
     if (!history.length) return
     const lastMove = history.at(-1)
     if (!lastMove?.newCell) return
-    const { success } = await movePieceToCoordinate(
-      lastMove?.newCell,
-      lastMove?.coordinates?.[0],
-      true
-    )
+    const { success } = await movePieceToCoordinate({
+      cell: lastMove?.newCell,
+      coordinate: lastMove?.coordinates?.[0],
+      skipHistory: true,
+      skipToggleTurn: true
+    })
     if (success) {
       setHistory(history.filter((i) => i !== lastMove))
       setFuture([...future, lastMove])
@@ -169,11 +198,12 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
     if (!future.length) return
     const lastMove = future.at(-1)
     if (!lastMove?.oldCell) return
-    const { success } = await movePieceToCoordinate(
-      lastMove?.oldCell,
-      lastMove?.coordinates?.[1],
-      true
-    )
+    const { success } = await movePieceToCoordinate({
+      cell: lastMove?.oldCell,
+      coordinate: lastMove?.coordinates?.[1],
+      skipHistory: true,
+      skipToggleTurn: true
+    })
     if (success) {
       setFuture(future.filter((i) => i !== lastMove))
       setHistory([...history, lastMove])
@@ -245,7 +275,8 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
         isGameOver,
         promotionType,
         setPromotionType,
-        hPosition
+        hPosition,
+        resetPosition
       }}
     >
       {children}

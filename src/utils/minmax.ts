@@ -16,7 +16,9 @@ export const minmax = ({
 }) => {
   const children = tree.next ?? []
   if (depth <= 0 || !children.length) {
-    const evaluation = getPlayerEvaluation(player, tree?.position as TCell[])
+    const evaluation =
+      getPlayerEvaluation(player, tree?.position as TCell[]) -
+      getPlayerEvaluation(player === 'w' ? 'b' : 'w', tree?.position as TCell[])
     const res = player === 'w' ? evaluation : -evaluation
     return res
   }

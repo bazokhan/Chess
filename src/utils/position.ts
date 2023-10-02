@@ -24,12 +24,32 @@ export const getRankSquaresBetween = (square1: TSquare, square2: TSquare) => {
   return squares
 }
 
+type PositionReturnType = {
+  move: HistoryItem
+  newPosition: TCell[]
+  newSquare: TSquare
+  newCell: {
+    square: TSquare
+    moved: boolean
+    piece: TPiece
+  }
+}
+const cache: Record<string, PositionReturnType> = {}
+
 export const getNewPosition = (
   cell: TCell,
   coordinate: TCoordinate,
   position: TCell[],
   promotionType: TPromotion = 'Q'
 ) => {
+  const id = `${cell.piece}-${cell.square}-${coordinate.x}-${coordinate.y}-${
+    coordinate.type
+  }-${coordinate.relatedPiece?.piece}-${coordinate.relatedPiece
+    ?.square}-${coordinate.relatedCoordinates?.x}-${coordinate
+    .relatedCoordinates?.y}-${promotionType}-${JSON.stringify(position)}`
+  if (cache[id]) {
+    return cache[id]
+  }
   const hashed = hash(position)
   const start = Date.now()
   const oldCoordinates = getCoordinates(cell.square)
@@ -66,7 +86,16 @@ export const getNewPosition = (
       )} took ${time} ms`
     )
   }
-  return { move, newPosition: Object.values(newPosition), newSquare, newCell }
+
+  const result = {
+    move,
+    newPosition: Object.values(newPosition),
+    newSquare,
+    newCell
+  }
+
+  cache[id] = result
+  return result
 }
 
 export const validateWithinBoard = (move: TCoordinate) =>

@@ -15,6 +15,7 @@ import { usePositionContext } from './PositionContext'
 import { TPlayer } from 'utils/getPlayerEvaluation'
 import { calculateBestMoveV1 } from 'utils/engines/v1'
 import { calculateBestMoveV2 } from 'utils/engines/v2'
+import { fileLog } from 'utils/fileLog'
 
 const DebugContext = createContext<{
   setTurnToWhite: () => void
@@ -34,7 +35,15 @@ export const useDebugContext = () => useContext(DebugContext)
 
 export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
   const { setTurn, turn } = useTurnContext()
-  const { position, movePieceToCoordinate, isGameOver } = usePositionContext()
+  const {
+    position,
+    movePieceToCoordinate,
+    isGameOver,
+    isBlackKingCheckMated,
+    isWhiteKingCheckMated,
+    isBlackKingStaleMated,
+    isWhiteKingStaleMated
+  } = usePositionContext()
   const [forceStop, setForceStop] = useState(true)
   const [moveNumber, setMoveNumber] = useState(0)
   const moveRef = useRef(-1)
@@ -60,7 +69,12 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
       )
 
       if (bestMove) {
-        await movePieceToCoordinate(bestMove.piece, bestMove.move)
+        await movePieceToCoordinate({
+          cell: bestMove.piece,
+          coordinate: bestMove.move,
+          skipAnimation: true,
+          skipHistory: true
+        })
       }
     },
     [movePieceToCoordinate, position, turn]
@@ -70,19 +84,41 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
 
   useEffect(() => {
     if (moveRef.current === moveNumber) return
-    if (isGameOver || forceStop) return
+    if (isGameOver || forceStop) {
+      const logText = isBlackKingCheckMated
+        ? 'White won by checkmate'
+        : isWhiteKingCheckMated
+        ? 'Black won by checkmate'
+        : isBlackKingStaleMated || isWhiteKingStaleMated
+        ? 'Game drawn by stalemate'
+        : 'Unknown status'
+      fileLog('Games', `Game over in ${moveNumber} moves. ${logText}.`)
+      return
+    }
     moveRef.current = moveNumber
     const play = async () => {
       await handleAIPlay(turn)
+      const newMoveNumber = moveNumber + 1
       await new Promise((resolve) => {
         setTimeout(() => {
-          setMoveNumber(moveNumber + 1)
+          setMoveNumber(newMoveNumber)
           resolve(true)
-        }, 100)
+        }, 0)
       })
+      fileLog('Games', `Move: ${newMoveNumber}`)
     }
     play()
-  }, [forceStop, handleAIPlay, isGameOver, moveNumber, turn])
+  }, [
+    forceStop,
+    handleAIPlay,
+    isBlackKingCheckMated,
+    isBlackKingStaleMated,
+    isGameOver,
+    isWhiteKingCheckMated,
+    isWhiteKingStaleMated,
+    moveNumber,
+    turn
+  ])
 
   return (
     <DebugContext.Provider

@@ -6,7 +6,8 @@ import {
   LuChevronFirst,
   LuChevronRight,
   LuChevronLeft,
-  LuStopCircle
+  LuStopCircle,
+  LuRedo
 } from 'react-icons/lu'
 import { FaChessPawn } from 'react-icons/fa'
 import {
@@ -29,18 +30,14 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
     isWhiteKingCheckMated,
     isBlackKingCheckMated,
     isWhiteKingStaleMated,
-    isBlackKingStaleMated
+    isBlackKingStaleMated,
+    resetPosition
   } = usePositionContext()
 
   const { turn } = useTurnContext()
 
-  const {
-    setTurnToBlack,
-    setTurnToWhite,
-    handleAIPlay,
-    runMatch,
-    setForceStop
-  } = useDebugContext()
+  const { setTurnToBlack, setTurnToWhite, handleAIPlay, setForceStop } =
+    useDebugContext()
 
   return (
     <div
@@ -59,6 +56,15 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
         <div className="mb-4 flex w-full text-3xl font-black">
           <button
             className="flex w-full items-center justify-center text-[#9c9b9a] hover:text-[#c7c7c7]"
+            onClick={() => {
+              setForceStop(true)
+              resetPosition()
+            }}
+          >
+            <LuRedo />
+          </button>
+          <button
+            className="flex w-full items-center justify-center text-[#9c9b9a] hover:text-[#c7c7c7]"
             onClick={() => setForceStop(true)}
           >
             <LuStopCircle />
@@ -67,7 +73,6 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
             className="flex w-full items-center justify-center text-[#9c9b9a] hover:text-[#c7c7c7]"
             onClick={() => {
               setForceStop(false)
-              runMatch()
             }}
           >
             <LuChevronRight />

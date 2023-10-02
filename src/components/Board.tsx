@@ -88,7 +88,7 @@ export const Board: FC<BoardProps> = ({ hideCoordinates = false }) => {
             ({ x, y }) => x === boardX && y === boardY
           )
           if (activeCell && targetMove) {
-            movePieceToCoordinate(activeCell, targetMove)
+            movePieceToCoordinate({ cell: activeCell, coordinate: targetMove })
           }
           setActiveCell(null)
           resetHighlightedCoordinates()

@@ -7,12 +7,12 @@ import { fileLog } from './fileLog'
 export type TPlayer = 'w' | 'b'
 
 const WEIGHTS = {
-  r: 5,
-  n: 3,
-  b: 3,
-  q: 9,
+  r: 500,
+  n: 300,
+  b: 320,
+  q: 900,
   k: 0,
-  p: 1
+  p: 100
 }
 
 export const getPlayerEvaluation = (player: TPlayer, position: TCell[]) => {
@@ -63,11 +63,12 @@ export const generatePositionsTree = (
   const nextMoves = generateAllNextMoves(turn, position)
   let total = 0
   const result = nextMoves
-    .map(({ piece, moves }) => {
-      const innerStart = Date.now()
-      const result = moves.map((move) => {
+    .map(({ piece, moves }, x) => {
+      const result = moves.map((move, y) => {
+        const innerStart = Date.now()
         const { newPosition } = getNewPosition(piece, move, position)
-        return {
+        const innerAfterGeneration = Date.now()
+        const res = {
           piece,
           move,
           turn,
@@ -79,13 +80,20 @@ export const generatePositionsTree = (
             false
           )
         }
+        const time = Date.now() - innerStart
+        const secondPart = Date.now() - innerAfterGeneration
+        if (time >= 100) {
+          console.log(
+            `[${x},${y}]: this round for ${piece.piece} at ${
+              piece.square
+            } moves took ${time} ms, the first part took ${
+              innerAfterGeneration - innerStart
+            } ms, the second took ${secondPart} ms`
+          )
+        }
+        return res
       })
-      const time = Date.now() - innerStart
-      if (time >= 5000) {
-        console.log(
-          `this round for ${piece.piece} at ${piece.square} moves took ${time} ms`
-        )
-      }
+
       total += moves.length
       return result
     })
