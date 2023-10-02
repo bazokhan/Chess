@@ -5,13 +5,31 @@ import { getQueenAvailableMoves } from './moves/queen'
 import { getKingAvailableMoves } from './moves/king'
 import { getKnightAvailableMoves } from './moves/knight'
 import { getPawnAvailableMoves } from './moves/pawn'
+import { TPlayer } from './getPlayerEvaluation'
+import { getNewPosition } from './position'
+import { getIsBlackKingChecked, getIsWhiteKingChecked } from './getChecks'
 
 const validateWithinBoard = (move: TCoordinate) =>
   move.x >= 0 && move.x < 8 && move.y >= 0 && move.y < 8
+const validateNotCheckedKing = (
+  kingColor: TPlayer,
+  move: TCoordinate,
+  activeCell: TCell | null,
+  position?: TCell[]
+) => {
+  if (!activeCell || !position) return false
+  const { newPosition } = getNewPosition(activeCell, move, position)
+  const isChecked =
+    kingColor === 'w'
+      ? getIsWhiteKingChecked({ position: newPosition })
+      : getIsBlackKingChecked({ position: newPosition })
+  return !isChecked
+}
 
 export const getAvailableMoves = (
   activeCell: TCell | null,
-  position?: TCell[]
+  position?: TCell[],
+  skipFilteringByChecks: boolean = false
 ): TCoordinate[] => {
   if (!activeCell) return []
   let moves: TCoordinate[] = []
@@ -52,5 +70,16 @@ export const getAvailableMoves = (
     }
   }
 
-  return moves.filter(validateWithinBoard)
+  return moves
+    .filter(validateWithinBoard)
+    .filter((m) =>
+      skipFilteringByChecks
+        ? true
+        : validateNotCheckedKing(
+            activeCell.piece[0] as TPlayer,
+            m,
+            activeCell,
+            position
+          )
+    )
 }

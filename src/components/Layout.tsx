@@ -23,7 +23,11 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
     future,
     history,
     pgn,
-    position
+    position,
+    isWhiteKingInCheck,
+    isBlackKingInCheck,
+    isWhiteKingCheckMated,
+    isBlackKingCheckMated
   } = usePositionContext()
 
   const { turn } = useTurnContext()
@@ -51,6 +55,29 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
             </p>
           ))}
         </div>
+
+        {isWhiteKingCheckMated ? (
+          <p className="w-full p-2 text-center font-black text-green-500">
+            CHECK MATE - Black Wins!
+          </p>
+        ) : null}
+        {isBlackKingCheckMated ? (
+          <p className="w-full p-2 text-center font-black text-green-500">
+            CHECK MATE - White Wins!
+          </p>
+        ) : null}
+
+        {isWhiteKingInCheck ? (
+          <p className="w-full p-2 text-center font-black text-red-500">
+            White King Is In Check!
+          </p>
+        ) : null}
+
+        {isBlackKingInCheck ? (
+          <p className="w-full p-2 text-center font-black text-red-500">
+            Black King Is In Check!
+          </p>
+        ) : null}
 
         {printMoves(generateAllNextMoves(turn, position)).map((text) => (
           <p key={text} className="m-0 w-full px-2 py-0 text-xs">

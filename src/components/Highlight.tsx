@@ -3,7 +3,7 @@ import { FC } from 'react'
 import { TCoordinate } from 'types/Cell'
 import { getSquare } from 'utils/getCoordinates'
 
-type Variant = 'mark' | 'availableMove' | 'move'
+type Variant = 'mark' | 'availableMove' | 'move' | 'check'
 
 export const HighLight: FC<TCoordinate & { variant?: Variant }> = ({
   x,
@@ -17,6 +17,13 @@ export const HighLight: FC<TCoordinate & { variant?: Variant }> = ({
     return (
       <div
         className={`absolute  z-10 h-[12.5%] w-[12.5%] bg-[#eb6150]/80`}
+        style={{ top: `${y * 12.5}%`, left: `${x * 12.5}%` }}
+      />
+    )
+  if (variant === 'check')
+    return (
+      <div
+        className={`absolute z-10 h-[12.5%] w-[12.5%] bg-[#eb6150]/80`}
         style={{ top: `${y * 12.5}%`, left: `${x * 12.5}%` }}
       />
     )

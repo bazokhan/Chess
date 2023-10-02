@@ -3,6 +3,7 @@ import { FC, useEffect, useRef } from 'react'
 import { HighLight } from './Highlight'
 import { Piece } from './Piece'
 import { usePositionContext } from 'context/PositionContext'
+import { getCoordinates } from 'utils/getCoordinates'
 
 type BoardProps = {
   hideCoordinates?: boolean
@@ -38,7 +39,22 @@ export const Board: FC<BoardProps> = ({ hideCoordinates = false }) => {
     availableMoves
   } = useBoardContext()
 
-  const { position, movePieceToCoordinate, history } = usePositionContext()
+  const {
+    position,
+    movePieceToCoordinate,
+    history,
+    isBlackKingInCheck,
+    isWhiteKingInCheck
+  } = usePositionContext()
+
+  const blackKing = position.find((p) => p.piece === 'bk')
+  const whiteKing = position.find((p) => p.piece === 'wk')
+  const { x: blackX, y: blackY } = blackKing
+    ? getCoordinates(blackKing?.square)
+    : { x: 0, y: 0 }
+  const { x: whiteX, y: whiteY } = whiteKing
+    ? getCoordinates(whiteKing?.square)
+    : { x: 0, y: 0 }
 
   // User Interaction with the board
   useEffect(() => {
@@ -79,6 +95,25 @@ export const Board: FC<BoardProps> = ({ hideCoordinates = false }) => {
         }
       }}
     >
+      {isBlackKingInCheck ? (
+        <HighLight
+          key={`${blackX}-${blackY}-${isBlackKingInCheck}`}
+          x={blackX}
+          y={blackY}
+          variant="check"
+        />
+      ) : null}
+      {isWhiteKingInCheck ? (
+        <HighLight
+          key={`${whiteX}-${whiteY}-${isWhiteKingInCheck}`}
+          x={whiteX}
+          y={whiteY}
+          variant="check"
+        />
+      ) : null}
+      {isBlackKingInCheck ? (
+        <HighLight key={`${blackX}-${blackY}`} x={blackX} y={blackY} />
+      ) : null}
       {highlightedCoordinates?.map(({ x, y }) => (
         <HighLight key={`${x}-${y}`} x={x} y={y} />
       ))}

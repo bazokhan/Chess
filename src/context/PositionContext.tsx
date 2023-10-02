@@ -4,6 +4,7 @@ import {
   PropsWithChildren,
   createContext,
   useContext,
+  useMemo,
   useState
 } from 'react'
 import { TCell, TCoordinate } from 'types/Cell'
@@ -11,6 +12,12 @@ import { AnimationRecord, HistoryItem } from 'types/History'
 import { encodePgn } from 'utils/encodePgn'
 import { useTurnContext } from './TurnContext'
 import { getNewPosition } from 'utils/position'
+import {
+  getIsBlackKingCheckMated,
+  getIsBlackKingChecked,
+  getIsWhiteKingCheckMated,
+  getIsWhiteKingChecked
+} from 'utils/getChecks'
 
 const initialPosition: TCell[] = [
   { square: 'a1', piece: 'wr' },
@@ -56,6 +63,10 @@ const PositionContext = createContext<{
   future: HistoryItem[]
   moveForwardInHistory: () => void
   pgn: string[]
+  isWhiteKingInCheck: boolean
+  isBlackKingInCheck: boolean
+  isWhiteKingCheckMated: boolean
+  isBlackKingCheckMated: boolean
 }>({
   position: initialPosition,
   movePieceToCoordinate: () => {},
@@ -64,7 +75,11 @@ const PositionContext = createContext<{
   moveBackInHistory: () => {},
   future: [],
   moveForwardInHistory: () => {},
-  pgn: []
+  pgn: [],
+  isWhiteKingInCheck: false,
+  isBlackKingInCheck: false,
+  isWhiteKingCheckMated: false,
+  isBlackKingCheckMated: false
 })
 
 export const usePositionContext = () => useContext(PositionContext)
@@ -174,6 +189,22 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
     setHistory([...history, lastMove])
   }
 
+  const isWhiteKingInCheck = useMemo(() => {
+    return getIsWhiteKingChecked({ position })
+  }, [position])
+
+  const isBlackKingInCheck = useMemo(() => {
+    return getIsBlackKingChecked({ position })
+  }, [position])
+
+  const isWhiteKingCheckMated = useMemo(() => {
+    return getIsWhiteKingCheckMated({ position })
+  }, [position])
+
+  const isBlackKingCheckMated = useMemo(() => {
+    return getIsBlackKingCheckMated({ position })
+  }, [position])
+
   return (
     <PositionContext.Provider
       value={{
@@ -184,7 +215,11 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
         moveBackInHistory,
         future,
         moveForwardInHistory,
-        pgn
+        pgn,
+        isWhiteKingInCheck,
+        isBlackKingInCheck,
+        isWhiteKingCheckMated,
+        isBlackKingCheckMated
       }}
     >
       {children}
