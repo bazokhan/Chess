@@ -1,14 +1,15 @@
-import { TCell, TCoordinate } from 'types/Cell'
+import { TCell, TCoordinate, TPosition } from 'types/Cell'
 import { getCoordinates, getSquare } from 'utils/getCoordinates'
 import { isWhite } from 'utils/pieces'
 
 export const getPawnAvailableMoves = ({
   piece,
-  position = []
+  position
 }: {
   piece: TCell
-  position?: TCell[]
+  position: TPosition
 }) => {
+  const start = Date.now()
   const { x, y } = getCoordinates(piece.square)
   const moves: TCoordinate[] = []
   const isWhitePiece = isWhite(piece)
@@ -17,12 +18,14 @@ export const getPawnAvailableMoves = ({
   const maxDelta = piece.square[1] === firstPawnRank ? 2 : 1
 
   for (let delta = 1; delta <= maxDelta; delta += 1) {
+    const newY = y + delta * yDirection
+    if (newY < 0 || newY > 7) continue
     const newCoordinate = {
       x,
-      y: y + delta * yDirection
+      y: newY
     }
     const square = getSquare(newCoordinate)
-    const targetPiece = position.find((cell) => cell.square === square)
+    const targetPiece = position[square]
     if (targetPiece) {
       break
     }
@@ -35,16 +38,26 @@ export const getPawnAvailableMoves = ({
     possibleCaptureDeltaX += 1
   ) {
     if (possibleCaptureDeltaX === 0) continue // pawns can't capture in front of them
+    const newX = x + possibleCaptureDeltaX
+    const newY = y + yDirection
+    if (newX < 0 || newX > 7 || newY < 0 || newY > 7) continue
     const newCoordinate = {
       x: x + possibleCaptureDeltaX,
       y: y + yDirection
     }
     const square = getSquare(newCoordinate)
-    const targetPiece = position.find((cell) => cell.square === square)
-    const isSamePlayer = targetPiece?.piece[0] === piece.piece[0]
-    if (targetPiece && !isSamePlayer) {
+    const targetPiece = position[square]
+    if (
+      targetPiece &&
+      targetPiece?.piece[0] !== piece.piece[0] /** not same player */
+    ) {
       moves.push(newCoordinate)
     }
+  }
+  const end = Date.now()
+  const time = end - start
+  if (piece.piece === 'wp' && time > 100) {
+    console.log(`this white pawn at ${piece.square} took ${time} ms`)
   }
 
   return moves

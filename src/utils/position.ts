@@ -1,11 +1,17 @@
 import { TPiece, TSquare } from 'types/Board'
-import { TCell, TCoordinate, TPromotion } from 'types/Cell'
+import { TCell, TCoordinate, TPosition, TPromotion } from 'types/Cell'
 import { getCoordinates, getSquare } from './getCoordinates'
 import { HistoryItem } from 'types/History'
 
 export const checkIsSquareEmpty = (square: TSquare, position: TCell[]) => {
   return position.filter((c) => c.square === square).length === 0
 }
+
+export const hash = (position: TCell[]): TPosition =>
+  position.reduce((acc, cell) => {
+    acc[cell.square] = cell
+    return acc
+  }, {} as TPosition)
 
 export const getRankSquaresBetween = (square1: TSquare, square2: TSquare) => {
   const [min, max] = [square1, square2].sort()
@@ -24,6 +30,7 @@ export const getNewPosition = (
   position: TCell[],
   promotionType: TPromotion = 'Q'
 ) => {
+  const start = Date.now()
   const cellIndex = position.findIndex((c) => c.square === cell.square)
   const oldCoordinates = getCoordinates(cell.square)
   const newSquare = getSquare(coordinate)
@@ -52,6 +59,17 @@ export const getNewPosition = (
     move.capturedCell = alreadyHasPiece
     newPosition = newPosition.filter((c) => c !== alreadyHasPiece)
   }
-
+  const end = Date.now()
+  const time = end - start
+  if (time > 10) {
+    console.log(
+      `moving ${cell.piece} from ${cell.square} to ${getSquare(
+        coordinate
+      )} took ${time} ms`
+    )
+  }
   return { move, newPosition, newSquare, newCell }
 }
+
+export const validateWithinBoard = (move: TCoordinate) =>
+  move.x >= 0 && move.x < 8 && move.y >= 0 && move.y < 8

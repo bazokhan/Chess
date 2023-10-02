@@ -7,11 +7,11 @@ import {
   useMemo,
   useState
 } from 'react'
-import { TCell, TCoordinate, TPromotion } from 'types/Cell'
+import { TCell, TCoordinate, TPosition, TPromotion } from 'types/Cell'
 import { AnimationRecord, HistoryItem } from 'types/History'
 import { encodePgn } from 'utils/encodePgn'
 import { useTurnContext } from './TurnContext'
-import { getNewPosition } from 'utils/position'
+import { getNewPosition, hash } from 'utils/position'
 import {
   getIsBlackKingCheckMated,
   getIsBlackKingChecked,
@@ -48,6 +48,7 @@ const PositionContext = createContext<{
   isGameOver: boolean
   setPromotionType: (promotionType: TPromotion) => void
   promotionType: TPromotion
+  hPosition: TPosition
 }>({
   position: initialPosition,
   movePieceToCoordinate: () => {},
@@ -65,7 +66,8 @@ const PositionContext = createContext<{
   isBlackKingStaleMated: false,
   isGameOver: false,
   setPromotionType: () => {},
-  promotionType: 'Q'
+  promotionType: 'Q',
+  hPosition: {} as TPosition
 })
 
 export const usePositionContext = () => useContext(PositionContext)
@@ -178,6 +180,8 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
     }
   }
 
+  const hPosition: TPosition = hash(position)
+
   const isWhiteKingInCheck = useMemo(() => {
     return getIsWhiteKingChecked({ position })
   }, [position])
@@ -227,7 +231,8 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
         isBlackKingStaleMated,
         isGameOver,
         promotionType,
-        setPromotionType
+        setPromotionType,
+        hPosition
       }}
     >
       {children}

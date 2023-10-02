@@ -1,12 +1,12 @@
-import { TCell, TCoordinate } from 'types/Cell'
+import { TCell, TCoordinate, TPosition } from 'types/Cell'
 import { getCoordinates, getSquare } from 'utils/getCoordinates'
 
 export const getKnightAvailableMoves = ({
   piece,
-  position = []
+  position
 }: {
   piece: TCell
-  position?: TCell[]
+  position: TPosition
 }) => {
   const { x, y } = getCoordinates(piece.square)
   const moves: TCoordinate[] = []
@@ -19,12 +19,15 @@ export const getKnightAvailableMoves = ({
     for (let deltaX = 1; deltaX <= 2; deltaX += 1) {
       for (let deltaY = 1; deltaY <= 2; deltaY += 1) {
         if (deltaX === deltaY) continue // Knights have different delta on x and y when they move, it's always 1 sqaure vs 2
+        const newX = x + deltaX * xDirection
+        const newY = y + deltaY * yDirection
+        if (newX < 0 || newX > 7 || newY < 0 || newY > 7) continue
         const newCoordinate = {
-          x: x + deltaX * xDirection,
-          y: y + deltaY * yDirection
+          x: newX,
+          y: newY
         }
         const square = getSquare(newCoordinate)
-        const targetPiece = position.find((cell) => cell.square === square)
+        const targetPiece = position[square]
         const isSamePlayer = targetPiece?.piece[0] === piece.piece[0]
         if (targetPiece) {
           if (!isSamePlayer) {

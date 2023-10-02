@@ -1,14 +1,15 @@
-import { TCell, TCoordinate } from 'types/Cell'
+import { TSquare } from 'types/Board'
+import { TCell, TCoordinate, TPosition } from 'types/Cell'
 import { getCoordinates, getSquare } from 'utils/getCoordinates'
 import { isWhite } from 'utils/pieces'
-import { checkIsSquareEmpty, getRankSquaresBetween } from 'utils/position'
+import { getRankSquaresBetween } from 'utils/position'
 
 export const getKingAvailableMoves = ({
   piece,
-  position = []
+  position
 }: {
   piece: TCell
-  position?: TCell[]
+  position: TPosition
 }) => {
   const { x, y } = getCoordinates(piece.square)
   const moves: TCoordinate[] = []
@@ -22,20 +23,25 @@ export const getKingAvailableMoves = ({
     [-1, 0],
     [1, 0]
   ].forEach(([xDirection, yDirection]) => {
-    const newCoordinate = {
-      x: x + 1 * xDirection,
-      y: y + 1 * yDirection
-    }
-    const square = getSquare(newCoordinate)
-    const targetPiece = position.find((cell) => cell.square === square)
-    const isSamePlayer = targetPiece?.piece[0] === piece.piece[0]
-    if (targetPiece) {
-      if (!isSamePlayer) {
-        moves.push(newCoordinate)
+    const newX = x + 1 * xDirection
+    const newY = y + 1 * yDirection
+    const invalid = newX < 0 || newX > 7 || newY < 0 || newY > 7
+    if (!invalid) {
+      const newCoordinate = {
+        x: newX,
+        y: newY
       }
-      return moves
+      const square = getSquare(newCoordinate)
+      const targetPiece = position[square]
+      const isSamePlayer = targetPiece?.piece[0] === piece.piece[0]
+      if (targetPiece) {
+        if (!isSamePlayer) {
+          moves.push(newCoordinate)
+        }
+        return moves
+      }
+      moves.push(newCoordinate)
     }
-    moves.push(newCoordinate)
   })
 
   // Castling moves
@@ -49,28 +55,30 @@ export const getKingAvailableMoves = ({
         { square: 'a8', piece: 'br' },
         { square: 'h8', piece: 'br' }
       ]
-  const rooksInPosition = position.filter(
-    (c) =>
-      !!rooks.find(
-        (r) => r.square === c.square && r.piece === c.piece && !c.moved
-      )
-  )
+  const rooksInPosition = rooks
+    .map((r) => position[r.square as TSquare])
+    .filter(Boolean)
+    .filter((r) => r.piece[1] === 'r' && !r.moved)
   const validRooks = rooksInPosition.filter((r) =>
-    getRankSquaresBetween(r.square, piece.square).every((square) =>
-      checkIsSquareEmpty(square, position)
+    getRankSquaresBetween(r.square, piece.square).every(
+      (square) => !position[square]
     )
   )
   if (!piece.moved && validRooks?.length) {
     validRooks.forEach((r) => {
       const direction =
         getCoordinates(r.square).x < getCoordinates(piece.square).x ? -1 : 1
-      moves.push({
-        x: x + 2 * direction,
-        y,
-        type: 'castle',
-        relatedPiece: r,
-        relatedCoordinates: { x: x + 1 * direction, y }
-      })
+      const newX = x + 2 * direction
+      const invalid = newX < 0 || newX > 7
+      if (!invalid) {
+        moves.push({
+          x: newX,
+          y,
+          type: 'castle',
+          relatedPiece: r,
+          relatedCoordinates: { x: x + 1 * direction, y }
+        })
+      }
     })
   }
 

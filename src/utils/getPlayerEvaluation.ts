@@ -69,9 +69,11 @@ export const generatePositionsTree = (
   if (!depth) return []
   const start = Date.now()
   const nextMoves = generateAllNextMoves(turn, position)
+  let total = 0
   const result = nextMoves
     .map(({ piece, moves }) => {
-      return moves.map((move) => {
+      const innerStart = Date.now()
+      const result = moves.map((move) => {
         const { newPosition } = getNewPosition(piece, move, position)
         return {
           piece,
@@ -85,9 +87,22 @@ export const generatePositionsTree = (
           )
         }
       })
+      const time = Date.now() - innerStart
+      if (time >= 50) {
+        console.log(
+          `this round for ${piece.piece} at ${piece.square} moves took ${time} ms`
+        )
+      }
+      total += moves.length
+      return result
     })
     .flat()
   const end = Date.now()
+  if (end - start > 100) {
+    console.log(
+      `there was a total of ${total} moves assessed for this position`
+    )
+  }
   if (log) {
     fileLog(
       'generatePositionsTree',
