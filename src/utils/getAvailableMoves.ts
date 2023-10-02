@@ -1,4 +1,4 @@
-import { TCell, TCoordinate } from 'types/Cell'
+import { TCell, TCoordinate, TPosition } from 'types/Cell'
 import { getBishopAvailableMoves } from './moves/bishop'
 import { getRockAvailableMoves } from './moves/rock'
 import { getQueenAvailableMoves } from './moves/queen'
@@ -32,44 +32,42 @@ const validateNotCheckedKing = (
   return !isChecked
 }
 
-export const getAvailableMoves = (
+export const getAvailableMovesWithoutFiltering = (
   activeCell: TCell | null,
-  position?: TCell[],
-  skipFilteringByChecks: boolean = false
+  position?: TPosition
 ): TCoordinate[] => {
   if (!activeCell || !position) return []
   let moves: TCoordinate[] = []
-  const hashed = hash(position)
 
   switch (activeCell.piece) {
     case 'wp':
     case 'bp': {
-      moves = getPawnAvailableMoves({ piece: activeCell, position: hashed })
+      moves = getPawnAvailableMoves({ piece: activeCell, position })
       break
     }
     case 'wn':
     case 'bn': {
-      moves = getKnightAvailableMoves({ piece: activeCell, position: hashed })
+      moves = getKnightAvailableMoves({ piece: activeCell, position })
       break
     }
     case 'wb':
     case 'bb': {
-      moves = getBishopAvailableMoves({ piece: activeCell, position: hashed })
+      moves = getBishopAvailableMoves({ piece: activeCell, position })
       break
     }
     case 'wr':
     case 'br': {
-      moves = getRockAvailableMoves({ piece: activeCell, position: hashed })
+      moves = getRockAvailableMoves({ piece: activeCell, position })
       break
     }
     case 'wq':
     case 'bq': {
-      moves = getQueenAvailableMoves({ piece: activeCell, position: hashed })
+      moves = getQueenAvailableMoves({ piece: activeCell, position })
       break
     }
     case 'wk':
     case 'bk': {
-      moves = getKingAvailableMoves({ piece: activeCell, position: hashed })
+      moves = getKingAvailableMoves({ piece: activeCell, position })
       break
     }
     default: {
@@ -77,16 +75,23 @@ export const getAvailableMoves = (
     }
   }
 
-  if (skipFilteringByChecks) return moves
+  return moves
+}
+
+export const getAvailableMoves = (
+  activeCell: TCell | null,
+  position?: TCell[]
+): TCoordinate[] => {
+  if (!activeCell || !position) return []
+  const hashed = hash(position)
+  const moves = getAvailableMovesWithoutFiltering(activeCell, hashed)
 
   return moves.filter((m) =>
-    skipFilteringByChecks
-      ? true
-      : validateNotCheckedKing(
-          activeCell.piece[0] as TPlayer,
-          m,
-          activeCell,
-          position
-        )
+    validateNotCheckedKing(
+      activeCell.piece[0] as TPlayer,
+      m,
+      activeCell,
+      position
+    )
   )
 }

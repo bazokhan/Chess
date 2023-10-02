@@ -14,12 +14,12 @@ import { useTurnContext } from './TurnContext'
 import { getNewPosition, hash } from 'utils/position'
 import {
   getIsBlackKingCheckMated,
-  getIsBlackKingChecked,
-  getIsWhiteKingCheckMated,
-  getIsWhiteKingChecked
+  getIsKingChecked,
+  getIsWhiteKingCheckMated
 } from 'utils/getChecks'
 import { parseFenPosition } from 'utils/parseFenPosition'
 import { initialPosition } from 'data/normalInitialPosition'
+import { isWhite } from 'utils/pieces'
 
 const positions = {
   random: '8/3Pk3/2KN2r1/8/5n2/8/8/3R4 b - - 0 76',
@@ -182,13 +182,26 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
 
   const hPosition: TPosition = hash(position)
 
+  const blackPieces = position.filter((c) => !isWhite(c))
+  const whiteKing = position.find((c) => c.piece === 'wk')
+  const whitePieces = position.filter((c) => isWhite(c))
+  const blackKing = position.find((c) => c.piece === 'bk')
+
   const isWhiteKingInCheck = useMemo(() => {
-    return getIsWhiteKingChecked({ position })
-  }, [position])
+    return getIsKingChecked({
+      position: hPosition,
+      pieces: blackPieces,
+      king: whiteKing as TCell
+    })
+  }, [blackPieces, hPosition, whiteKing])
 
   const isBlackKingInCheck = useMemo(() => {
-    return getIsBlackKingChecked({ position })
-  }, [position])
+    return getIsKingChecked({
+      position: hPosition,
+      pieces: whitePieces,
+      king: blackKing as TCell
+    })
+  }, [blackKing, hPosition, whitePieces])
 
   const isWhiteKingCheckMated = useMemo(() => {
     return getIsWhiteKingCheckMated({ position, turn })

@@ -30,8 +30,8 @@ export const getNewPosition = (
   position: TCell[],
   promotionType: TPromotion = 'Q'
 ) => {
+  const hashed = hash(position)
   const start = Date.now()
-  const cellIndex = position.findIndex((c) => c.square === cell.square)
   const oldCoordinates = getCoordinates(cell.square)
   const newSquare = getSquare(coordinate)
 
@@ -48,17 +48,15 @@ export const getNewPosition = (
     newCell,
     coordinates: [oldCoordinates, coordinate]
   }
-  let newPosition = [...position]
-  newPosition.splice(cellIndex, 1)
-  newPosition.push(newCell)
-
-  const alreadyHasPiece = position.find((c) => c.square === newSquare)
 
   // Capture
-  if (alreadyHasPiece) {
-    move.capturedCell = alreadyHasPiece
-    newPosition = newPosition.filter((c) => c !== alreadyHasPiece)
+  const newPosition = { ...hashed }
+  if (newPosition[newSquare]) {
+    move.capturedCell = hashed[newSquare]
   }
+  delete newPosition[cell.square]
+  newPosition[newSquare] = newCell
+
   const end = Date.now()
   const time = end - start
   if (time > 10) {
@@ -68,7 +66,7 @@ export const getNewPosition = (
       )} took ${time} ms`
     )
   }
-  return { move, newPosition, newSquare, newCell }
+  return { move, newPosition: Object.values(newPosition), newSquare, newCell }
 }
 
 export const validateWithinBoard = (move: TCoordinate) =>
