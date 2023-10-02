@@ -123,7 +123,7 @@ function flatten(input: TreeItem[]): TreeItem[][] {
   return output
 }
 
-export const calculateBestMove = ({
+export const calculateBestMoveV1 = ({
   turn,
   position,
   depth = 3
@@ -177,6 +177,5 @@ export const calculateBestMove = ({
   const valuesSorted = Object.values(hashedDeltas)
     .filter((l) => !!l.line)
     .sort((a, b) => b.delta - a.delta)
-  console.log(valuesSorted)
   return valuesSorted[0].move
 }

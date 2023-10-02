@@ -11,3 +11,5 @@ export type TCoordinate = {
   relatedPiece?: TCell
   relatedCoordinates?: TCoordinate
 }
+
+export type TPromotion = 'Q' | 'R' | 'B' | 'N'

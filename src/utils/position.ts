@@ -1,5 +1,5 @@
-import { TSquare } from 'types/Board'
-import { TCell, TCoordinate } from 'types/Cell'
+import { TPiece, TSquare } from 'types/Board'
+import { TCell, TCoordinate, TPromotion } from 'types/Cell'
 import { getCoordinates, getSquare } from './getCoordinates'
 import { HistoryItem } from 'types/History'
 
@@ -21,12 +21,21 @@ export const getRankSquaresBetween = (square1: TSquare, square2: TSquare) => {
 export const getNewPosition = (
   cell: TCell,
   coordinate: TCoordinate,
-  position: TCell[]
+  position: TCell[],
+  promotionType: TPromotion = 'Q'
 ) => {
   const cellIndex = position.findIndex((c) => c.square === cell.square)
   const oldCoordinates = getCoordinates(cell.square)
   const newSquare = getSquare(coordinate)
+
   const newCell = { ...cell, square: newSquare, moved: true }
+  if (
+    (cell.piece === 'wp' && coordinate.y === 0) ||
+    (cell.piece === 'bp' && coordinate.y === 7)
+  ) {
+    newCell.piece = `${cell.piece[0]}${promotionType.toLowerCase()}` as TPiece
+  }
+
   const move: HistoryItem = {
     oldCell: cell,
     newCell,

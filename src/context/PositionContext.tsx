@@ -7,7 +7,7 @@ import {
   useMemo,
   useState
 } from 'react'
-import { TCell, TCoordinate } from 'types/Cell'
+import { TCell, TCoordinate, TPromotion } from 'types/Cell'
 import { AnimationRecord, HistoryItem } from 'types/History'
 import { encodePgn } from 'utils/encodePgn'
 import { useTurnContext } from './TurnContext'
@@ -23,9 +23,12 @@ import { initialPosition } from 'data/normalInitialPosition'
 
 const positions = {
   random: '8/3Pk3/2KN2r1/8/5n2/8/8/3R4 b - - 0 76',
-  stalemate: '3k4/3P4/3K4/8/8/8/8/7R'
+  normal: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR',
+  stalemate: '3k4/3P4/3K4/8/8/8/8/7R',
+  promotion: '8/3P4/3K4/8/8/8/8/7R'
 }
-const initPosition = parseFenPosition(positions.stalemate)
+const initPosition = parseFenPosition(positions.normal)
+// const initPosition = initialPosition
 
 const PositionContext = createContext<{
   position: TCell[]
@@ -42,6 +45,9 @@ const PositionContext = createContext<{
   isBlackKingCheckMated: boolean
   isWhiteKingStaleMated: boolean
   isBlackKingStaleMated: boolean
+  isGameOver: boolean
+  setPromotionType: (promotionType: TPromotion) => void
+  promotionType: TPromotion
 }>({
   position: initialPosition,
   movePieceToCoordinate: () => {},
@@ -56,7 +62,10 @@ const PositionContext = createContext<{
   isWhiteKingCheckMated: false,
   isBlackKingCheckMated: false,
   isWhiteKingStaleMated: false,
-  isBlackKingStaleMated: false
+  isBlackKingStaleMated: false,
+  isGameOver: false,
+  setPromotionType: () => {},
+  promotionType: 'Q'
 })
 
 export const usePositionContext = () => useContext(PositionContext)
@@ -66,9 +75,9 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
   const [future, setFuture] = useState<HistoryItem[]>([])
   const [pgn, setPgn] = useState<string[]>([])
   const [animate, setAnimate] = useState<AnimationRecord>({})
+  const [promotionType, setPromotionType] = useState<TPromotion>('Q')
 
   const { turn, toggleTurn } = useTurnContext()
-
   const tween = async (
     cellsAndMoves: [TCell, [TCoordinate, TCoordinate]][]
   ) => {
@@ -105,13 +114,13 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
     coordinate: TCoordinate,
     skipHistory: boolean = false
   ) => {
+    const turnToConsider = skipHistory ? cell.piece[0] : turn
     // Not their turn
-    if (cell.piece[0] !== turn) return position
+    if (cell.piece[0] !== turnToConsider) return { success: false, position }
 
     if (!skipHistory) {
       toggleTurn()
     }
-
     // Castle
     if (
       coordinate.type === 'castle' &&
@@ -124,7 +133,7 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
       ])
       await tween(moves.map((m) => [m.oldCell, m.coordinates]))
       setPosition(newPosition)
-      return newPosition
+      return { success: true, position: newPosition }
     } else {
       const { move, newPosition } = getNewPosition(cell, coordinate, position)
       if (!skipHistory) {
@@ -133,36 +142,40 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
       }
       await tween([[cell, move.coordinates]])
       setPosition(newPosition)
-      return newPosition
+      return { success: true, position: newPosition }
     }
   }
 
   const moveBackInHistory = async () => {
-    if (animate) return
+    if (Object.values(animate).filter(Boolean).length) return
     if (!history.length) return
     const lastMove = history.at(-1)
     if (!lastMove?.newCell) return
-    await movePieceToCoordinate(
+    const { success } = await movePieceToCoordinate(
       lastMove?.newCell,
       lastMove?.coordinates?.[0],
       true
     )
-    setHistory(history.filter((i) => i !== lastMove))
-    setFuture([...future, lastMove])
+    if (success) {
+      setHistory(history.filter((i) => i !== lastMove))
+      setFuture([...future, lastMove])
+    }
   }
 
   const moveForwardInHistory = async () => {
-    if (animate) return
+    if (Object.values(animate).filter(Boolean).length) return
     if (!future.length) return
     const lastMove = future.at(-1)
     if (!lastMove?.oldCell) return
-    await movePieceToCoordinate(
+    const { success } = await movePieceToCoordinate(
       lastMove?.oldCell,
       lastMove?.coordinates?.[1],
       true
     )
-    setFuture(future.filter((i) => i !== lastMove))
-    setHistory([...history, lastMove])
+    if (success) {
+      setFuture(future.filter((i) => i !== lastMove))
+      setHistory([...history, lastMove])
+    }
   }
 
   const isWhiteKingInCheck = useMemo(() => {
@@ -189,6 +202,12 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
     return getIsBlackKingCheckMated({ position, type: 'stalemate', turn })
   }, [position, turn])
 
+  const isGameOver =
+    isWhiteKingCheckMated ||
+    isBlackKingCheckMated ||
+    isWhiteKingStaleMated ||
+    isBlackKingStaleMated
+
   return (
     <PositionContext.Provider
       value={{
@@ -205,7 +224,10 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
         isWhiteKingCheckMated,
         isBlackKingCheckMated,
         isWhiteKingStaleMated,
-        isBlackKingStaleMated
+        isBlackKingStaleMated,
+        isGameOver,
+        promotionType,
+        setPromotionType
       }}
     >
       {children}

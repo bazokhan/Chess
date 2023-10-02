@@ -1,15 +1,15 @@
 import { usePositionContext } from 'context/PositionContext'
 import { useTurnContext } from 'context/TurnContext'
-import { FC, PropsWithChildren, useCallback } from 'react'
+import { FC, PropsWithChildren } from 'react'
 import {
   LuChevronLast,
   LuChevronFirst,
   LuChevronRight,
-  LuChevronLeft
+  LuChevronLeft,
+  LuStopCircle
 } from 'react-icons/lu'
 import { FaChessPawn } from 'react-icons/fa'
 import {
-  calculateBestMove,
   generateAllNextMoves,
   getPlayerEvaluation,
   printMoves
@@ -20,7 +20,6 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
   const {
     moveBackInHistory,
     moveForwardInHistory,
-    movePieceToCoordinate,
     future,
     history,
     pgn,
@@ -35,16 +34,13 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
 
   const { turn } = useTurnContext()
 
-  const { setTurnToBlack, setTurnToWhite } = useDebugContext()
-
-  const handleAIPlay = useCallback(() => {
-    const bestMove = turn === 'b' ? calculateBestMove({ turn, position }) : null
-    if (turn === 'b' && bestMove) {
-      setTimeout(() => {
-        movePieceToCoordinate(bestMove.piece, bestMove.move)
-      }, 1000)
-    }
-  }, [movePieceToCoordinate, position, turn])
+  const {
+    setTurnToBlack,
+    setTurnToWhite,
+    handleAIPlay,
+    runMatch,
+    setForceStop
+  } = useDebugContext()
 
   return (
     <div
@@ -59,6 +55,23 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
               {item}
             </p>
           ))}
+        </div>
+        <div className="mb-4 flex w-full text-3xl font-black">
+          <button
+            className="flex w-full items-center justify-center text-[#9c9b9a] hover:text-[#c7c7c7]"
+            onClick={() => setForceStop(true)}
+          >
+            <LuStopCircle />
+          </button>
+          <button
+            className="flex w-full items-center justify-center text-[#9c9b9a] hover:text-[#c7c7c7]"
+            onClick={() => {
+              setForceStop(false)
+              runMatch()
+            }}
+          >
+            <LuChevronRight />
+          </button>
         </div>
 
         <div className="flex w-full text-3xl font-black">
@@ -122,11 +135,11 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
           Move {history.length ?? 0} /{' '}
           {(future.length ?? 0) + (history.length ?? 0)}
         </p>
-        <div
-          className="flex w-full py-3 text-3xl font-black"
-          onClick={handleAIPlay}
-        >
-          <button className="flex w-full items-center justify-center text-green-600 hover:text-green-500">
+        <div className="flex w-full py-3 text-3xl font-black">
+          <button
+            className="flex w-full items-center justify-center text-green-600 hover:text-green-500"
+            onClick={() => handleAIPlay()}
+          >
             <FaChessPawn />
           </button>
         </div>
