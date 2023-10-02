@@ -12,7 +12,9 @@ import {
 } from 'react'
 import { useTurnContext } from './TurnContext'
 import { usePositionContext } from './PositionContext'
-import { TPlayer, calculateBestMoveV1 } from 'utils/getPlayerEvaluation'
+import { TPlayer } from 'utils/getPlayerEvaluation'
+import { calculateBestMoveV1 } from 'utils/engines/v1'
+import { calculateBestMoveV2 } from 'utils/engines/v2'
 
 const DebugContext = createContext<{
   setTurnToWhite: () => void
@@ -41,10 +43,22 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
 
   const handleAIPlay = useCallback(
     async (playerTurn?: TPlayer) => {
-      const bestMove = calculateBestMoveV1({
+      const fn = playerTurn === 'b' ? calculateBestMoveV1 : calculateBestMoveV2
+      console.log(
+        `${playerTurn?.toUpperCase()}'s turn: using V${fn.name.at(-1)}`
+      )
+      const bestMove = fn({
         turn: playerTurn ?? turn,
         position
       })
+
+      console.log(
+        `Best move for ${playerTurn?.toUpperCase()} was evaluated at ${
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (bestMove as any)?.evaluation ?? (bestMove as any)?.delta
+        }`
+      )
+
       if (bestMove) {
         await movePieceToCoordinate(bestMove.piece, bestMove.move)
       }
@@ -59,7 +73,7 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
     if (isGameOver || forceStop) return
     moveRef.current = moveNumber
     const play = async () => {
-      await handleAIPlay()
+      await handleAIPlay(turn)
       await new Promise((resolve) => {
         setTimeout(() => {
           setMoveNumber(moveNumber + 1)
@@ -68,9 +82,7 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
       })
     }
     play()
-  }, [forceStop, handleAIPlay, isGameOver, moveNumber])
-
-  console.log(moveNumber)
+  }, [forceStop, handleAIPlay, isGameOver, moveNumber, turn])
 
   return (
     <DebugContext.Provider

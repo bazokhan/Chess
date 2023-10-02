@@ -24,7 +24,7 @@ const validateNotCheckedKing = (
       : getIsBlackKingChecked({ position: newPosition })
   const end = Date.now()
   const time = end - start
-  if (time > 100) {
+  if (time > 10000) {
     console.log(
       `this ${activeCell.piece} at ${activeCell.square} took ${time} ms`
     )

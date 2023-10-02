@@ -20,6 +20,7 @@ export type TreeItem = {
   move: TCoordinate
   turn: TPlayer
   next?: TreeItem[]
+  position?: TCell[]
 }
 
 export type TPosition = Record<TSquare, TCell>

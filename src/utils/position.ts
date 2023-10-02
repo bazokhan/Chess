@@ -59,7 +59,7 @@ export const getNewPosition = (
 
   const end = Date.now()
   const time = end - start
-  if (time > 10) {
+  if (time > 10000) {
     console.log(
       `moving ${cell.piece} from ${cell.square} to ${getSquare(
         coordinate
