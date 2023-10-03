@@ -84,11 +84,15 @@ export const Board: FC<BoardProps> = ({ hideCoordinates = false }) => {
             e.clientY,
             boardRef.current
           )
-          const targetMove = availableMoves.find(
-            ({ x, y }) => x === boardX && y === boardY
-          )
+          const targetMove = availableMoves.find((m) => {
+            const { x, y } = getCoordinates(m)
+            return x === boardX && y === boardY
+          })
           if (activeCell && targetMove) {
-            movePieceToCoordinate({ cell: activeCell, coordinate: targetMove })
+            movePieceToCoordinate({
+              cell: activeCell,
+              coordinate: targetMove
+            })
           }
           setActiveCell(null)
           resetHighlightedCoordinates()
@@ -117,8 +121,13 @@ export const Board: FC<BoardProps> = ({ hideCoordinates = false }) => {
       {highlightedCoordinates?.map(({ x, y }) => (
         <HighLight key={`${x}-${y}`} x={x} y={y} />
       ))}
-      {availableMoves?.map(({ x, y }) => (
-        <HighLight key={`${x}-${y}`} x={x} y={y} variant="availableMove" />
+      {availableMoves?.map((m) => (
+        <HighLight
+          key={`${getCoordinates(m).x}-${getCoordinates(m).y}`}
+          x={getCoordinates(m).x}
+          y={getCoordinates(m).y}
+          variant="availableMove"
+        />
       ))}
       {history
         ?.at(-1)

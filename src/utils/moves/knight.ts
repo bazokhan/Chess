@@ -1,5 +1,6 @@
-import { TCell, TCoordinate, TPosition } from 'types/Cell'
-import { getCoordinates, getSquare } from 'utils/getCoordinates'
+import { TSquare } from 'types/Board'
+import { TCell, TPosition } from 'types/Cell'
+import { getCoordinates } from 'utils/getCoordinates'
 
 export const getKnightAvailableMoves = ({
   piece,
@@ -9,7 +10,7 @@ export const getKnightAvailableMoves = ({
   position: TPosition
 }) => {
   const { x, y } = getCoordinates(piece.square)
-  const moves: TCoordinate[] = []
+  const moves: TSquare[] = []
   ;[
     [-1, -1],
     [1, 1],
@@ -22,20 +23,19 @@ export const getKnightAvailableMoves = ({
         const newX = x + deltaX * xDirection
         const newY = y + deltaY * yDirection
         if (newX < 0 || newX > 7 || newY < 0 || newY > 7) continue
-        const newCoordinate = {
-          x: newX,
-          y: newY
-        }
-        const square = getSquare(newCoordinate)
+        const square = (String.fromCharCode(
+          piece.square.charCodeAt(0) + deltaX * xDirection
+        ) +
+          (8 - newY)) as TSquare
         const targetPiece = position[square]
         const isSamePlayer = targetPiece?.piece[0] === piece.piece[0]
         if (targetPiece) {
           if (!isSamePlayer) {
-            moves.push(newCoordinate)
+            moves.push(square)
           }
         } else {
           // this else is important since in knights, there is no break statement
-          moves.push(newCoordinate)
+          moves.push(square)
         }
       }
     }

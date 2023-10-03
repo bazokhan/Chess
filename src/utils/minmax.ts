@@ -1,8 +1,9 @@
 import { TCell, TreeItem } from 'types/Cell'
-import { evaluatePosition, getPlayerEvaluation } from './getPlayerEvaluation'
+import { evaluatePosition } from './getPlayerEvaluation'
 import { TPlayer } from 'types/Player'
 
 export const minmax = ({
+  index,
   tree,
   depth,
   alpha,
@@ -10,6 +11,7 @@ export const minmax = ({
   player,
   version = 2
 }: {
+  index: number
   tree: TreeItem
   depth: number
   alpha: number
@@ -18,54 +20,54 @@ export const minmax = ({
   version: number
 }) => {
   const children = tree.next ?? []
+  const move = `${tree.piece.square}${tree.move}`
+  // console.log(
+  //   `Calculating depth ${depth} for player ${player} on branch #${index}`
+  // )
   if (depth <= 0 || !children.length) {
-    const evaluation =
-      version === 1
-        ? getPlayerEvaluation(player, tree?.position as TCell[]) -
-          getPlayerEvaluation(
-            player === 'w' ? 'b' : 'w',
-            tree?.position as TCell[]
-          )
-        : evaluatePosition(player, tree?.position as TCell[])
+    const evaluation = evaluatePosition(player, tree?.position as TCell[])
+    if (index === 18) {
+      console.log(
+        `>>>>>>>>>>>> [Player ${player} - Branch ${index}]: ${move} Evaluation ${evaluation} Alpha ${alpha} Beta ${beta}`
+      )
+    }
     const res = player === 'w' ? evaluation : -evaluation
     return res
   }
 
-  if (player === 'w') {
-    let maxEval = -Infinity
-    for (const branch of children) {
-      const nextEval = minmax({
-        tree: branch,
-        depth: depth - 1,
-        alpha,
-        beta,
-        player: 'b',
-        version
-      })
+  let maxEval = -99999
+  let minEval = 99999
+  for (const branch of children) {
+    const nextEval = minmax({
+      index,
+      tree: branch,
+      depth: depth - 1,
+      alpha,
+      beta,
+      player: player === 'w' ? 'b' : 'w',
+      version
+    })
+    if (player === 'w') {
       maxEval = Math.max(maxEval, nextEval)
       alpha = Math.max(alpha, nextEval)
-      if (beta <= alpha) {
-        break
-      }
-    }
-    return maxEval
-  } else {
-    let minEval = Infinity
-    for (const branch of children) {
-      const nextEval = minmax({
-        tree: branch,
-        depth: depth - 1,
-        alpha,
-        beta,
-        player: 'w',
-        version
-      })
+    } else {
       minEval = Math.min(minEval, nextEval)
       beta = Math.min(beta, nextEval)
-      if (beta <= alpha) {
-        break
-      }
     }
+
+    if (index === 18) {
+      console.log(
+        `[Player ${player} - Branch ${index} - Depth ${depth}]: ${move} - NextEval ${nextEval} MaxEval ${maxEval} MinEval ${minEval} Alpha ${alpha} Beta ${beta}`
+      )
+      console.log(evaluatePosition(player, branch.position ?? []))
+    }
+    if (beta <= alpha) {
+      break
+    }
+  }
+  if (player === 'w') {
+    return maxEval
+  } else {
     return minEval
   }
 }

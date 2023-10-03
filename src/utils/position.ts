@@ -26,26 +26,28 @@ export const getRankSquaresBetween = (square1: TSquare, square2: TSquare) => {
 
 export const makeMove = (
   cell: TCell,
-  coordinate: TCoordinate,
+  coordinate: TSquare,
   position: TCell[],
   promotionType: TPromotion = 'Q'
 ) => {
   const hashed = hash(position)
-  const newSquare = getSquare(coordinate)
 
-  const newCell = { ...cell, square: newSquare, moved: true }
+  const newCell = { ...cell, square: coordinate, moved: true }
   if (
-    (cell.piece === 'wp' && coordinate.y === 0) ||
-    (cell.piece === 'bp' && coordinate.y === 7)
+    (cell.piece === 'wp' && coordinate[1] === '8') ||
+    (cell.piece === 'bp' && coordinate[1] === '1')
   ) {
     newCell.piece = `${cell.piece[0]}${promotionType.toLowerCase()}` as TPiece
   }
 
   const newPosition = { ...hashed }
   delete newPosition[cell.square]
-  newPosition[newSquare] = newCell
+  newPosition[coordinate] = newCell
 
-  return Object.values(newPosition)
+  return {
+    newPosition: Object.values(newPosition),
+    move: `${cell.square}${coordinate}`
+  }
 }
 
 type PositionReturnType = {
@@ -103,3 +105,10 @@ export const getNewPosition = (
 
 export const validateWithinBoard = (move: TCoordinate) =>
   move.x >= 0 && move.x < 8 && move.y >= 0 && move.y < 8
+
+export const parseFenMove = (fenMove: string) => {
+  return [
+    getCoordinates(fenMove.slice(0, 2) as TSquare),
+    getCoordinates(fenMove.slice(2) as TSquare)
+  ] as [TCoordinate, TCoordinate]
+}

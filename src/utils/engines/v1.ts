@@ -1,12 +1,11 @@
 import { TCell, TreeItem } from 'types/Cell'
 import { TPlayer } from 'types/Player'
 import { flatten } from 'utils/flatten'
-import { getSquare } from 'utils/getCoordinates'
 import {
   generatePositionsTree,
   getPlayerEvaluation
 } from 'utils/getPlayerEvaluation'
-import { getNewPosition } from 'utils/position'
+import { makeMove } from 'utils/position'
 
 export const calculateBestMoveV1 = ({
   turn,
@@ -33,12 +32,8 @@ export const calculateBestMoveV1 = ({
     let originalPosition = position
     if (Date.now() > before + time && !!bestMove) return bestMove
     line.forEach(({ piece, move }) => {
-      originalPosition = getNewPosition(
-        piece,
-        move,
-        originalPosition
-      ).newPosition
-      const id = line[0].piece.square + '-' + getSquare(move)
+      originalPosition = makeMove(piece, move, originalPosition).newPosition
+      const id = line[0].piece.square + '-' + move
       const selfEvaluation = getPlayerEvaluation(turn, originalPosition)
       const opponentEvaluation = getPlayerEvaluation(
         turn === 'w' ? 'b' : 'w',

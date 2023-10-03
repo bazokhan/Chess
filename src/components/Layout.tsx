@@ -146,7 +146,7 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
         <div className="flex w-full py-3 text-3xl font-black">
           <button
             className="flex w-full items-center justify-center text-green-600 hover:text-green-500"
-            onClick={() => handleAIPlay(turn)}
+            onClick={() => handleAIPlay(turn, true)}
           >
             <FaChessPawn />
           </button>

@@ -1,4 +1,3 @@
-import { useTurnContext } from 'context/TurnContext'
 import { useState, useEffect, useRef, useMemo } from 'react'
 
 type StockFishRes = {
@@ -6,10 +5,11 @@ type StockFishRes = {
   evaluation: string
 }
 const EvalBar = ({ fen }: { fen: string }) => {
-  const { turn } = useTurnContext()
   const [stockFishRes, setStokFishRes] = useState<StockFishRes>(
     {} as StockFishRes
   )
+
+  const [loading, setLoading] = useState(false)
 
   const cache = useRef<Record<string, StockFishRes>>({})
 
@@ -21,6 +21,7 @@ const EvalBar = ({ fen }: { fen: string }) => {
       }
       return
     }
+    setLoading(true)
     fetch('http://localhost:8080', {
       method: 'POST',
       body: JSON.stringify({ fen }),
@@ -30,41 +31,53 @@ const EvalBar = ({ fen }: { fen: string }) => {
       .then((res) => {
         cache.current[id] = res
         setStokFishRes(res)
+        setLoading(false)
+      })
+      .catch(() => {
+        setLoading(false)
       })
   }, [stockFishRes, fen])
 
-  const wHeight = useMemo(() => {
-    const evaluation = stockFishRes.evaluation
-    if (evaluation?.includes('mate')) return 100
+  const evaluation: number | undefined | null = useMemo(() => {
+    const e = stockFishRes.evaluation
+    if (e?.includes('mate')) return null
     return (
-      (50 + Number(evaluation?.split?.(' ')?.[1] ?? '') / 100) *
-      (turn === 'w' ? 1 : -1)
+      (Number(e?.split?.(' ')?.[1] ?? '') / 100) *
+      (fen.split(' ')?.[1] === 'b' ? -1 : 1)
     )
-  }, [stockFishRes.evaluation, turn])
+  }, [fen, stockFishRes.evaluation])
+
+  const wHeight = useMemo(() => {
+    if (evaluation === null) return 100
+    if (!evaluation) return 50
+    return 50 + evaluation
+  }, [evaluation])
 
   const mate = useMemo(() => {
     const isMate = stockFishRes.evaluation?.includes('mate')
-    return isMate ? stockFishRes.evaluation : ''
+    return isMate ? stockFishRes.evaluation.replace('mate', 'M') : ''
   }, [stockFishRes.evaluation])
 
   return (
-    <div key={100} className="mr-1 h-full max-h-[80vh] w-7">
+    <div
+      key={100}
+      className={`mr-1 h-full max-h-[80vh] w-7 ${
+        loading ? 'opacity-0' : 'opacity-100'
+      }`}
+    >
       <div
-        style={{ height: `${100 - wHeight}%` }}
+        style={{ height: `${100 - wHeight}%`, transition: 'all 350ms' }}
         className="w-full bg-black text-center transition duration-700 ease-in-out"
-      >
-        <span className="text-sm font-bold text-white">
-          {mate.replace('mate', 'M')}
-        </span>
-      </div>
+      />
       <div
-        style={{ height: `${wHeight}%` }}
+        style={{ height: `${wHeight}%`, transition: 'all 350ms' }}
         className="w-full bg-gray-300 text-center transition duration-700 ease-in-out"
       >
-        <div style={{ flex: '1' }} />
-        {mate ? null : (
+        {mate ? (
+          <span className="text-sm font-bold text-black">{mate}</span>
+        ) : (
           <span className="text-sm font-bold text-black">
-            {(wHeight - 50).toFixed(1)}
+            {evaluation ? evaluation.toFixed(1) : ''}
           </span>
         )}
       </div>

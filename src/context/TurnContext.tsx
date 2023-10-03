@@ -1,3 +1,4 @@
+import { initialTurn } from 'data/initPosition'
 import {
   FC,
   PropsWithChildren,
@@ -20,7 +21,7 @@ const TurnContext = createContext<{
 export const useTurnContext = () => useContext(TurnContext)
 
 export const TurnProvider: FC<PropsWithChildren> = ({ children }) => {
-  const [turn, setTurn] = useState<TPlayer>('w')
+  const [turn, setTurn] = useState<TPlayer>(initialTurn ?? 'w')
   const toggleTurn = () => setTurn(turn === 'w' ? 'b' : 'w')
 
   return (

@@ -4,7 +4,6 @@ import {
   getAvailableMoves,
   getAvailableMovesWithoutFiltering
 } from './getAvailableMoves'
-import { getSquare } from './getCoordinates'
 import { TPlayer } from 'types/Player'
 import { hash } from './position'
 
@@ -20,7 +19,7 @@ export const getIsKingChecked = ({
   const allAvailableMovesForPieces = pieces.flatMap((c) =>
     getAvailableMovesWithoutFiltering(c, position)
   )
-  return !!allAvailableMovesForPieces.find((m) => getSquare(m) === king?.square)
+  return !!allAvailableMovesForPieces.find((m) => m === king?.square)
 }
 
 export const getIsWhiteKingChecked = ({ position }: { position: TCell[] }) => {
@@ -29,9 +28,7 @@ export const getIsWhiteKingChecked = ({ position }: { position: TCell[] }) => {
   const allAvailableMovesForBlack = blackPieces.flatMap((c) =>
     getAvailableMovesWithoutFiltering(c, hash(position))
   )
-  return !!allAvailableMovesForBlack.find(
-    (m) => getSquare(m) === whiteKing?.square
-  )
+  return !!allAvailableMovesForBlack.find((m) => m === whiteKing?.square)
 }
 
 export const getIsBlackKingChecked = ({ position }: { position: TCell[] }) => {
@@ -40,9 +37,7 @@ export const getIsBlackKingChecked = ({ position }: { position: TCell[] }) => {
   const allAvailableMovesForWhite = whitePieces.flatMap((c) =>
     getAvailableMovesWithoutFiltering(c, hash(position))
   )
-  return !!allAvailableMovesForWhite.find(
-    (m) => getSquare(m) === blackKing?.square
-  )
+  return !!allAvailableMovesForWhite.find((m) => m === blackKing?.square)
 }
 
 type TCheckType = 'checkmate' | 'stalemate'
@@ -67,7 +62,7 @@ export const getIsKingCheckMated = ({
     getAvailableMoves(c, position)
   )
   const isPlayerKingChecked = !!allAvailableMovesForOpponent.find(
-    (m) => getSquare(m) === king?.square
+    (m) => m === king?.square
   )
 
   return (
@@ -96,7 +91,7 @@ export const getIsWhiteKingCheckMated = ({
     getAvailableMoves(c, position)
   )
   const isWhiteKingChecked = !!allAvailableMovesForBlack.find(
-    (m) => getSquare(m) === whiteKing?.square
+    (m) => m === whiteKing?.square
   )
 
   return (
@@ -125,7 +120,7 @@ export const getIsBlackKingCheckMated = ({
     getAvailableMovesWithoutFiltering(c, hash(position))
   )
   const isBlackKingChecked = !!allAvailableMovesForWhite.find(
-    (m) => getSquare(m) === blackKing?.square
+    (m) => m === blackKing?.square
   )
 
   return (

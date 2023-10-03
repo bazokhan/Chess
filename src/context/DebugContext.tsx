@@ -19,7 +19,7 @@ import { fileLog } from 'utils/fileLog'
 const DebugContext = createContext<{
   setTurnToWhite: () => void
   setTurnToBlack: () => void
-  handleAIPlay: (turn?: TPlayer) => void
+  handleAIPlay: (turn?: TPlayer, recordHistory?: boolean) => void
   runMatch: () => void
   setForceStop: Dispatch<SetStateAction<boolean>>
 }>({
@@ -50,11 +50,11 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
   const setTurnToBlack = () => setTurn('b')
 
   const handleAIPlay = useCallback(
-    async (playerTurn?: TPlayer) => {
+    async (playerTurn?: TPlayer, recordHistory?: boolean) => {
       const bestMove = calculateBestMoveV2({
         turn: playerTurn ?? turn,
         position,
-        minmaxVersion: playerTurn === 'w' ? 2 : 1
+        minmaxVersion: 2
       })
 
       if (bestMove) {
@@ -62,7 +62,7 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
           cell: bestMove.piece,
           coordinate: bestMove.move,
           skipAnimation: true,
-          skipHistory: true
+          skipHistory: !recordHistory
         })
       }
     },

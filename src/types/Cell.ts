@@ -17,7 +17,7 @@ export type TPromotion = 'Q' | 'R' | 'B' | 'N'
 
 export type TreeItem = {
   piece: TCell
-  move: TCoordinate
+  move: TSquare
   turn: TPlayer
   next?: TreeItem[]
   position?: TCell[]

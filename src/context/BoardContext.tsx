@@ -10,6 +10,7 @@ import { TCell, TCoordinate } from 'types/Cell'
 import { getAvailableMoves } from 'utils/getAvailableMoves'
 import { getCoordinates } from 'utils/getCoordinates'
 import { usePositionContext } from './PositionContext'
+import { TSquare } from 'types/Board'
 
 const BoardContext = createContext<{
   activeCell: TCell | null
@@ -17,7 +18,7 @@ const BoardContext = createContext<{
   highlightedCoordinates: TCoordinate[]
   toggleHighlight: (cell: TCoordinate) => void
   resetHighlightedCoordinates: () => void
-  availableMoves: TCoordinate[]
+  availableMoves: TSquare[]
   activeCoordinates: TCoordinate | null
 }>({
   activeCell: null,

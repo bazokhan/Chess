@@ -9,28 +9,19 @@ import {
 } from 'react'
 import { TCell, TCoordinate, TPosition, TPromotion } from 'types/Cell'
 import { AnimationRecord, HistoryItem } from 'types/History'
-import { encodePgn } from 'utils/encodePgn'
+// import { encodePgn } from 'utils/encodePgn'
 import { useTurnContext } from './TurnContext'
-import { getNewPosition, hash } from 'utils/position'
+import { hash, makeMove, parseFenMove } from 'utils/position'
 import {
   getIsBlackKingCheckMated,
   getIsKingChecked,
   getIsWhiteKingCheckMated
 } from 'utils/getChecks'
-import { encodeFenPosition, parseFenPosition } from 'utils/parseFenPosition'
+import { encodeFenPosition } from 'utils/parseFenPosition'
 import { initialPosition } from 'data/normalInitialPosition'
 import { isWhite } from 'utils/pieces'
-
-// const positions = {
-//   random: '8/3Pk3/2KN2r1/8/5n2/8/8/3R4 b - - 0 76',
-//   normal: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR',
-//   stalemate: '3k4/3P4/3K4/8/8/8/8/7R',
-//   promotion: '8/3P4/3K4/8/8/8/8/7R'
-// }
-const initPosition = parseFenPosition(
-  '2q3k1/4br1p/6RQ/1p1n2p1/7P/1P4P1/1B2PP2/6K1 b - - 0 27'
-)
-// const initPosition = initialPosition
+import { initPosition } from 'data/initPosition'
+import { TSquare } from 'types/Board'
 
 const PositionContext = createContext<{
   position: TCell[]
@@ -42,7 +33,7 @@ const PositionContext = createContext<{
     skipToggleTurn = false
   }: {
     cell: TCell
-    coordinate: TCoordinate
+    coordinate: TSquare
     skipHistory?: boolean
     skipAnimation?: boolean
     skipToggleTurn?: boolean
@@ -91,9 +82,9 @@ const PositionContext = createContext<{
 export const usePositionContext = () => useContext(PositionContext)
 export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
   const [position, setPosition] = useState<TCell[]>(initPosition)
-  const [history, setHistory] = useState<HistoryItem[]>([])
-  const [future, setFuture] = useState<HistoryItem[]>([])
-  const [pgn, setPgn] = useState<string[]>([])
+  const [history] = useState<HistoryItem[]>([])
+  const [future] = useState<HistoryItem[]>([])
+  const [pgn] = useState<string[]>([])
   const [animate, setAnimate] = useState<AnimationRecord>({})
   const [promotionType, setPromotionType] = useState<TPromotion>('Q')
 
@@ -120,11 +111,11 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
     })
   }
 
-  const movePieces = (cellsAndCoordinates: [TCell, TCoordinate][]) => {
+  const movePieces = (cellsAndCoordinates: [TCell, TSquare][]) => {
     let initial = position
-    const moves: HistoryItem[] = []
+    const moves: string[] = []
     cellsAndCoordinates.forEach(([cell, coordinate]) => {
-      const { move, newPosition } = getNewPosition(cell, coordinate, initial)
+      const { move, newPosition } = makeMove(cell, coordinate, initial)
       initial = newPosition
       moves.push(move)
     })
@@ -139,7 +130,7 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
     skipToggleTurn = false
   }: {
     cell: TCell
-    coordinate: TCoordinate
+    coordinate: TSquare
     skipHistory?: boolean
     skipAnimation?: boolean
     skipToggleTurn?: boolean
@@ -152,28 +143,41 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
       toggleTurn()
     }
     // Castle
+    const castlingPositions = { wk: ['c1', 'g1'], bk: ['c8', 'g8'] }
+    const rooks = { c1: 'a1', g1: 'h1', c8: 'a8', g8: 'h8' }
+    const rookDestination = { a1: 'd1', h1: 'f1', a8: 'd8', h8: 'f8' }
     if (
-      coordinate.type === 'castle' &&
-      coordinate.relatedPiece &&
-      coordinate.relatedCoordinates
+      castlingPositions[cell.piece as keyof typeof castlingPositions]?.includes(
+        coordinate
+      )
     ) {
+      const rook = rooks[coordinate as keyof typeof rooks] as TSquare
+      const newRookPlace = rookDestination[rook as keyof typeof rookDestination]
+
       const { moves, newPosition } = movePieces([
         [cell, coordinate],
-        [coordinate.relatedPiece, coordinate.relatedCoordinates]
+        ...(newRookPlace
+          ? [[hPosition[rook], newRookPlace as TSquare] as [TCell, TSquare]]
+          : [])
       ])
       if (!skipAnimation) {
-        await tween(moves.map((m) => [m.oldCell, m.coordinates]))
+        await tween(
+          moves.map((m) => [
+            hPosition[m.slice(0, 2) as TSquare],
+            parseFenMove(m)
+          ])
+        )
       }
       setPosition(newPosition)
       return { success: true, position: newPosition }
     } else {
-      const { move, newPosition } = getNewPosition(cell, coordinate, position)
-      if (!skipHistory) {
-        setHistory([...history, move])
-        setPgn(encodePgn(pgn, move))
-      }
+      const { move, newPosition } = makeMove(cell, coordinate, position)
+      // if (!skipHistory) {
+      //   setHistory([...history, { coordinates: parseFenMove(move) }])
+      //   setPgn(encodePgn(pgn, { coordinates: parseFenMove(move) }))
+      // }
       if (!skipAnimation) {
-        await tween([[cell, move.coordinates]])
+        await tween([[cell, parseFenMove(move)]])
       }
       setPosition(newPosition)
       return { success: true, position: newPosition }
@@ -181,37 +185,37 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
   }
 
   const moveBackInHistory = async () => {
-    if (Object.values(animate).filter(Boolean).length) return
-    if (!history.length) return
-    const lastMove = history.at(-1)
-    if (!lastMove?.newCell) return
-    const { success } = await movePieceToCoordinate({
-      cell: lastMove?.newCell,
-      coordinate: lastMove?.coordinates?.[0],
-      skipHistory: true,
-      skipToggleTurn: true
-    })
-    if (success) {
-      setHistory(history.filter((i) => i !== lastMove))
-      setFuture([...future, lastMove])
-    }
+    // if (Object.values(animate).filter(Boolean).length) return
+    // if (!history.length) return
+    // const lastMove = history.at(-1)
+    // if (!lastMove?.newCell) return
+    // const { success } = await movePieceToCoordinate({
+    //   cell: lastMove?.newCell,
+    //   coordinate: lastMove?.coordinates?.[0],
+    //   skipHistory: true,
+    //   skipToggleTurn: true
+    // })
+    // if (success) {
+    //   setHistory(history.filter((i) => i !== lastMove))
+    //   setFuture([...future, lastMove])
+    // }
   }
 
   const moveForwardInHistory = async () => {
-    if (Object.values(animate).filter(Boolean).length) return
-    if (!future.length) return
-    const lastMove = future.at(-1)
-    if (!lastMove?.oldCell) return
-    const { success } = await movePieceToCoordinate({
-      cell: lastMove?.oldCell,
-      coordinate: lastMove?.coordinates?.[1],
-      skipHistory: true,
-      skipToggleTurn: true
-    })
-    if (success) {
-      setFuture(future.filter((i) => i !== lastMove))
-      setHistory([...history, lastMove])
-    }
+    // if (Object.values(animate).filter(Boolean).length) return
+    // if (!future.length) return
+    // const lastMove = future.at(-1)
+    // if (!lastMove?.oldCell) return
+    // const { success } = await movePieceToCoordinate({
+    //   cell: lastMove?.oldCell,
+    //   coordinate: lastMove?.coordinates?.[1],
+    //   skipHistory: true,
+    //   skipToggleTurn: true
+    // })
+    // if (success) {
+    //   setFuture(future.filter((i) => i !== lastMove))
+    //   setHistory([...history, lastMove])
+    // }
   }
 
   const hPosition: TPosition = hash(position)

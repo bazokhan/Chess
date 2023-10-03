@@ -1,6 +1,6 @@
 import { TSquare } from 'types/Board'
-import { TCell, TCoordinate, TPosition } from 'types/Cell'
-import { getCoordinates, getSquare } from 'utils/getCoordinates'
+import { TCell, TPosition } from 'types/Cell'
+import { getCoordinates } from 'utils/getCoordinates'
 import { isWhite } from 'utils/pieces'
 import { getRankSquaresBetween } from 'utils/position'
 
@@ -12,7 +12,7 @@ export const getKingAvailableMoves = ({
   position: TPosition
 }) => {
   const { x, y } = getCoordinates(piece.square)
-  const moves: TCoordinate[] = []
+  const moves: TSquare[] = []
   ;[
     [-1, -1],
     [1, 1],
@@ -27,20 +27,19 @@ export const getKingAvailableMoves = ({
     const newY = y + 1 * yDirection
     const invalid = newX < 0 || newX > 7 || newY < 0 || newY > 7
     if (!invalid) {
-      const newCoordinate = {
-        x: newX,
-        y: newY
-      }
-      const square = getSquare(newCoordinate)
+      const square = (String.fromCharCode(
+        piece.square.charCodeAt(0) + xDirection
+      ) +
+        (8 - newY)) as TSquare
       const targetPiece = position[square]
       const isSamePlayer = targetPiece?.piece[0] === piece.piece[0]
       if (targetPiece) {
         if (!isSamePlayer) {
-          moves.push(newCoordinate)
+          moves.push(square)
         }
         return moves
       }
-      moves.push(newCoordinate)
+      moves.push(square)
     }
   })
 
@@ -71,13 +70,12 @@ export const getKingAvailableMoves = ({
       const newX = x + 2 * direction
       const invalid = newX < 0 || newX > 7
       if (!invalid) {
-        moves.push({
-          x: newX,
-          y,
-          type: 'castle',
-          relatedPiece: r,
-          relatedCoordinates: { x: x + 1 * direction, y }
-        })
+        const square = (String.fromCharCode(
+          piece.square.charCodeAt(0) + 2 * direction
+        ) +
+          (8 - y)) as TSquare
+        // TODO: restore castling
+        moves.push(square)
       }
     })
   }

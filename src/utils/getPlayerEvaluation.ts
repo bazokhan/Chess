@@ -1,10 +1,10 @@
-import { TCell, TCoordinate, TreeItem } from 'types/Cell'
+import { TCell, TreeItem } from 'types/Cell'
 import { getAvailableMoves } from './getAvailableMoves'
-import { getSquare } from './getCoordinates'
 import { makeMove } from './position'
 import { fileLog } from './fileLog'
 import { TPlayer } from 'types/Player'
 import { getIsKingCheckMated } from './getChecks'
+import { TSquare } from 'types/Board'
 
 const WEIGHTS = {
   r: 500,
@@ -80,18 +80,19 @@ export const evaluatePosition = (player: TPlayer, position: TCell[]) => {
         type: 'checkmate'
       })
 
-  return (
+  const finalWeight =
     ownWeight -
     opponentWeight +
     (isOpponentKingCheckMated ? Infinity : 0) -
     (isOwnKingCheckMated ? Infinity : 0)
-  )
+
+  return finalWeight
 }
 
 export const printMoves = (
   nextMoves: {
     piece: TCell
-    moves: TCoordinate[]
+    moves: TSquare[]
   }[]
 ) => {
   return nextMoves.map(
@@ -101,7 +102,7 @@ export const printMoves = (
       } ${
         !moves?.length
           ? `Can't move.`
-          : `Can move to ${moves.map((m) => `${getSquare(m)}`).join(' or ')}`
+          : `Can move to ${moves.map((m) => `${m}`).join(' or ')}`
       }`
   )
 }
@@ -117,7 +118,7 @@ export const generateAllNextMoves = (player: TPlayer, position: TCell[]) => {
     .filter(Boolean)
   return availableMoves as {
     piece: TCell
-    moves: TCoordinate[]
+    moves: TSquare[]
   }[]
 }
 
@@ -133,7 +134,7 @@ export const generatePositionsTree = (
   const result = nextMoves
     .map(({ piece, moves }) => {
       const result = moves.map((move) => {
-        const newPosition = makeMove(piece, move, position)
+        const { newPosition } = makeMove(piece, move, position)
         const res = {
           piece,
           move,

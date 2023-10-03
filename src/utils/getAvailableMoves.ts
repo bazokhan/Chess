@@ -1,4 +1,4 @@
-import { TCell, TCoordinate, TPosition } from 'types/Cell'
+import { TCell, TPosition } from 'types/Cell'
 import { getBishopAvailableMoves } from './moves/bishop'
 import { getRockAvailableMoves } from './moves/rock'
 import { getQueenAvailableMoves } from './moves/queen'
@@ -6,17 +6,18 @@ import { getKingAvailableMoves } from './moves/king'
 import { getKnightAvailableMoves } from './moves/knight'
 import { getPawnAvailableMoves } from './moves/pawn'
 import { TPlayer } from 'types/Player'
-import { getNewPosition, hash } from './position'
+import { hash, makeMove } from './position'
 import { getIsBlackKingChecked, getIsWhiteKingChecked } from './getChecks'
+import { TSquare } from 'types/Board'
 
 const validateNotCheckedKing = (
   kingColor: TPlayer,
-  move: TCoordinate,
+  move: TSquare,
   activeCell: TCell | null,
   position?: TCell[]
 ) => {
   if (!activeCell || !position) return false
-  const { newPosition } = getNewPosition(activeCell, move, position)
+  const { newPosition } = makeMove(activeCell, move, position)
   const isChecked =
     kingColor === 'w'
       ? getIsWhiteKingChecked({ position: newPosition })
@@ -28,9 +29,9 @@ const validateNotCheckedKing = (
 export const getAvailableMovesWithoutFiltering = (
   activeCell: TCell | null,
   position?: TPosition
-): TCoordinate[] => {
+): TSquare[] => {
   if (!activeCell || !position) return []
-  let moves: TCoordinate[] = []
+  let moves: TSquare[] = []
 
   switch (activeCell.piece) {
     case 'wp':
@@ -74,7 +75,7 @@ export const getAvailableMovesWithoutFiltering = (
 export const getAvailableMoves = (
   activeCell: TCell | null,
   position?: TCell[]
-): TCoordinate[] => {
+): TSquare[] => {
   if (!activeCell || !position) return []
   const hashed = hash(position)
   const moves = getAvailableMovesWithoutFiltering(activeCell, hashed)

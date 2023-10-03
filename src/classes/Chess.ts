@@ -8,11 +8,10 @@ import {
   getIsKingChecked,
   getIsWhiteKingCheckMated
 } from 'utils/getChecks'
-import { getCoordinates, getSquare } from 'utils/getCoordinates'
 import { TPlayer } from 'types/Player'
 import { encodeFenPosition, parseFenPosition } from 'utils/parseFenPosition'
 import { isWhite } from 'utils/pieces'
-import { getNewPosition, hash } from 'utils/position'
+import { getNewPosition, hash, makeMove } from 'utils/position'
 import { TSquare } from 'types/Board'
 
 export class Chess {
@@ -34,9 +33,12 @@ export class Chess {
   async makeFenMove(fenMove: string) {
     const [toBeMoved, destination] = [fenMove.slice(0, 2), fenMove.slice(2)]
     const cell = this.position.find((c) => c.square === toBeMoved)
-    const coordinate = getCoordinates(destination as TSquare)
     if (!cell) return false
-    await this.movePieceToCoordinate({ cell, coordinate, skipHistory: true })
+    await this.movePieceToCoordinate({
+      cell,
+      coordinate: destination as TSquare,
+      skipHistory: true
+    })
   }
 
   private movePieces(cellsAndCoordinates: [TCell, TCoordinate][]) {
@@ -61,7 +63,7 @@ export class Chess {
     skipToggleTurn = false
   }: {
     cell: TCell
-    coordinate: TCoordinate
+    coordinate: TSquare
     skipHistory?: boolean
     skipAnimation?: boolean
     skipToggleTurn?: boolean
@@ -71,37 +73,38 @@ export class Chess {
     if (cell.piece[0] !== turnToConsider)
       return { success: false, position: this.position }
 
+    // TODO: restore castling
     // Castle
-    if (
-      coordinate.type === 'castle' &&
-      coordinate.relatedPiece &&
-      coordinate.relatedCoordinates
-    ) {
-      const { newPosition } = this.movePieces([
-        [cell, coordinate],
-        [coordinate.relatedPiece, coordinate.relatedCoordinates]
-      ])
+    // if (
+    //   coordinate.type === 'castle' &&
+    //   coordinate.relatedPiece &&
+    //   coordinate.relatedCoordinates
+    // ) {
+    //   const { newPosition } = this.movePieces([
+    //     [cell, coordinate],
+    //     [coordinate.relatedPiece, coordinate.relatedCoordinates]
+    //   ])
 
-      this.position = newPosition
-      this.lastFenMove = `${cell.piece}${getSquare(coordinate)}`
-      this.moveNumber += 1
-      console.log(`${this.turn} played ${this.lastFenMove}`)
-      if (!skipToggleTurn) {
-        this.toggleTurn()
-      }
-      return { success: true, position: newPosition }
-    } else {
-      const { newPosition } = getNewPosition(cell, coordinate, this.position)
+    //   this.position = newPosition
+    //   this.lastFenMove = `${cell.piece}${getSquare(coordinate)}`
+    //   this.moveNumber += 1
+    //   console.log(`${this.turn} played ${this.lastFenMove}`)
+    //   if (!skipToggleTurn) {
+    //     this.toggleTurn()
+    //   }
+    //   return { success: true, position: newPosition }
+    // } else {
+    const { newPosition } = makeMove(cell, coordinate, this.position)
 
-      this.position = newPosition
-      this.lastFenMove = `${cell.square}${getSquare(coordinate)}`
-      this.moveNumber += 1
-      console.log(`${this.turn} played ${this.lastFenMove}`)
-      if (!skipToggleTurn) {
-        this.toggleTurn()
-      }
-      return { success: true, position: newPosition }
+    this.position = newPosition
+    this.lastFenMove = `${cell.square}${coordinate}`
+    this.moveNumber += 1
+    console.log(`${this.turn} played ${this.lastFenMove}`)
+    if (!skipToggleTurn) {
+      this.toggleTurn()
     }
+    return { success: true, position: newPosition }
+    // }
   }
 
   get hPosition(): TPosition {
@@ -193,9 +196,7 @@ export class Chess {
 
       if (log) {
         console.log(
-          `Moved ${bestMove.piece.piece} from ${
-            bestMove.piece.square
-          } to ${getSquare(bestMove.move)}`
+          `Moved ${bestMove.piece.piece} from ${bestMove.piece.square} to ${bestMove.move}`
         )
       }
     }

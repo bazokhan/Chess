@@ -1,5 +1,6 @@
-import { TCell, TCoordinate, TPosition } from 'types/Cell'
-import { getCoordinates, getSquare } from 'utils/getCoordinates'
+import { TSquare } from 'types/Board'
+import { TCell, TPosition } from 'types/Cell'
+import { getCoordinates } from 'utils/getCoordinates'
 import { isWhite } from 'utils/pieces'
 
 export const getPawnAvailableMoves = ({
@@ -10,7 +11,7 @@ export const getPawnAvailableMoves = ({
   position: TPosition
 }) => {
   const { x, y } = getCoordinates(piece.square)
-  const moves: TCoordinate[] = []
+  const moves: TSquare[] = []
   const isWhitePiece = isWhite(piece)
   const yDirection = isWhitePiece ? -1 : 1
   const firstPawnRank = isWhitePiece ? '2' : '7'
@@ -19,16 +20,12 @@ export const getPawnAvailableMoves = ({
   for (let delta = 1; delta <= maxDelta; delta += 1) {
     const newY = y + delta * yDirection
     if (newY < 0 || newY > 7) continue
-    const newCoordinate = {
-      x,
-      y: newY
-    }
-    const square = getSquare(newCoordinate)
+    const square = (piece.square[0] + (8 - newY)) as TSquare
     const targetPiece = position[square]
     if (targetPiece) {
       break
     }
-    moves.push(newCoordinate)
+    moves.push(square)
   }
 
   for (
@@ -40,17 +37,16 @@ export const getPawnAvailableMoves = ({
     const newX = x + possibleCaptureDeltaX
     const newY = y + yDirection
     if (newX < 0 || newX > 7 || newY < 0 || newY > 7) continue
-    const newCoordinate = {
-      x: x + possibleCaptureDeltaX,
-      y: y + yDirection
-    }
-    const square = getSquare(newCoordinate)
+    const square = (String.fromCharCode(
+      piece.square.charCodeAt(0) + possibleCaptureDeltaX
+    ) +
+      (8 - newY)) as TSquare
     const targetPiece = position[square]
     if (
       targetPiece &&
       targetPiece?.piece[0] !== piece.piece[0] /** not same player */
     ) {
-      moves.push(newCoordinate)
+      moves.push(square)
     }
   }
 
