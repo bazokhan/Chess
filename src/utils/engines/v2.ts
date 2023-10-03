@@ -1,17 +1,20 @@
 import { TCell, TreeItem } from 'types/Cell'
-import { TPlayer, generatePositionsTree } from 'utils/getPlayerEvaluation'
+import { TPlayer } from 'types/Player'
+import { generatePositionsTree } from 'utils/getPlayerEvaluation'
 import { minmax } from 'utils/minmax'
 
 export const calculateBestMoveV2 = ({
   turn,
   position,
   depth = 3,
-  time = 1000
+  time = 1000,
+  minmaxVersion = 2
 }: {
   turn: TPlayer
   position: TCell[]
   depth?: number
   time?: number
+  minmaxVersion: number
 }): TreeItem | null => {
   const before = Date.now()
   const tree = generatePositionsTree(turn, position, depth)
@@ -24,7 +27,8 @@ export const calculateBestMoveV2 = ({
         depth: 1,
         alpha: 0,
         beta: 0,
-        player: branch.turn
+        player: branch.turn,
+        version: minmaxVersion
       })
     }))
     .sort((a, b) => b.evaluation - a.evaluation)
@@ -39,7 +43,8 @@ export const calculateBestMoveV2 = ({
           depth: originalDepth,
           alpha: 0,
           beta: 0,
-          player: branch.turn
+          player: branch.turn,
+          version: minmaxVersion
         })
       }))
       .sort((a, b) => b.evaluation - a.evaluation)

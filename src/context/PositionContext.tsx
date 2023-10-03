@@ -28,7 +28,7 @@ import { isWhite } from 'utils/pieces'
 //   promotion: '8/3P4/3K4/8/8/8/8/7R'
 // }
 const initPosition = parseFenPosition(
-  '8/3pk3/R7/1R2Pp1p/2PPnKr1/8/8/8 w - - 4 43'
+  '2q3k1/4br1p/6RQ/1p1n2p1/7P/1P4P1/1B2PP2/6K1 b - - 0 27'
 )
 // const initPosition = initialPosition
 

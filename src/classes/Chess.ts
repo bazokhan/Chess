@@ -9,7 +9,7 @@ import {
   getIsWhiteKingCheckMated
 } from 'utils/getChecks'
 import { getSquare } from 'utils/getCoordinates'
-import { TPlayer } from 'utils/getPlayerEvaluation'
+import { TPlayer } from 'types/Player'
 import { parseFenPosition } from 'utils/parseFenPosition'
 import { isWhite } from 'utils/pieces'
 import { getNewPosition, hash } from 'utils/position'
@@ -158,10 +158,10 @@ export class Chess {
   }
 
   private async handleAIPlay(playerTurn?: TPlayer, log: boolean = false) {
-    const fn = calculateBestMoveV2
-    const bestMove = fn({
+    const bestMove = calculateBestMoveV2({
       turn: playerTurn ?? this.turn,
-      position: this.position
+      position: this.position,
+      minmaxVersion: 2
     })
 
     if (bestMove) {

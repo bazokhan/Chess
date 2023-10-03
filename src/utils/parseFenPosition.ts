@@ -1,6 +1,6 @@
 import { TCell } from 'types/Cell'
 import { getSquare } from './getCoordinates'
-import { TPlayer } from './getPlayerEvaluation'
+import { TPlayer } from 'types/Player'
 
 const getXY = (index: number) => {
   const x = index % 8

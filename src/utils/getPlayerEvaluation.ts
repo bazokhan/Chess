@@ -3,8 +3,8 @@ import { getAvailableMoves } from './getAvailableMoves'
 import { getSquare } from './getCoordinates'
 import { getNewPosition } from './position'
 import { fileLog } from './fileLog'
-
-export type TPlayer = 'w' | 'b'
+import { TPlayer } from 'types/Player'
+import { getIsKingCheckMated } from './getChecks'
 
 const WEIGHTS = {
   r: 500,
@@ -20,6 +20,71 @@ export const getPlayerEvaluation = (player: TPlayer, position: TCell[]) => {
   return ownPieces.reduce(
     (acc, c) => (acc += WEIGHTS[c.piece[1] as keyof typeof WEIGHTS]),
     0
+  )
+}
+
+type EvaluationHash = {
+  ownPieces: TCell[]
+  opponentPieces: TCell[]
+  ownKing?: TCell
+  opponentKing?: TCell
+}
+export const evaluatePosition = (player: TPlayer, position: TCell[]) => {
+  const { ownPieces, opponentPieces, ownKing, opponentKing } =
+    position.reduce<EvaluationHash>(
+      (acc, c) => {
+        const isOwnPiece = c.piece.startsWith(player)
+        if (isOwnPiece) {
+          acc.ownPieces.push(c)
+          if (c.piece[1] === 'k') {
+            acc.ownKing = c
+          }
+        } else {
+          acc.opponentPieces.push(c)
+          if (c.piece[1] === 'k') {
+            acc.opponentKing = c
+          }
+        }
+        return acc
+      },
+      { ownPieces: [], opponentPieces: [] } as EvaluationHash
+    )
+
+  const ownWeight = ownPieces.reduce(
+    (acc, c) => (acc += WEIGHTS[c.piece[1] as keyof typeof WEIGHTS]),
+    0
+  )
+
+  const opponentWeight = opponentPieces.reduce(
+    (acc, c) => (acc += WEIGHTS[c.piece[1] as keyof typeof WEIGHTS]),
+    0
+  )
+
+  const isOwnKingCheckMated = !ownKing
+    ? false
+    : getIsKingCheckMated({
+        king: ownKing,
+        ownPieces,
+        opponentPieces,
+        position,
+        type: 'checkmate'
+      })
+
+  const isOpponentKingCheckMated = !opponentKing
+    ? false
+    : getIsKingCheckMated({
+        king: opponentKing,
+        ownPieces: opponentPieces,
+        opponentPieces: ownPieces,
+        position,
+        type: 'checkmate'
+      })
+
+  return (
+    ownWeight -
+    opponentWeight +
+    (isOpponentKingCheckMated ? Infinity : 0) -
+    (isOwnKingCheckMated ? Infinity : 0)
   )
 }
 

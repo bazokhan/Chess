@@ -5,7 +5,7 @@ import { getQueenAvailableMoves } from './moves/queen'
 import { getKingAvailableMoves } from './moves/king'
 import { getKnightAvailableMoves } from './moves/knight'
 import { getPawnAvailableMoves } from './moves/pawn'
-import { TPlayer } from './getPlayerEvaluation'
+import { TPlayer } from 'types/Player'
 import { getNewPosition, hash } from './position'
 import { getIsBlackKingChecked, getIsWhiteKingChecked } from './getChecks'
 

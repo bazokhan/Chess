@@ -1,8 +1,8 @@
 import { TCell, TreeItem } from 'types/Cell'
+import { TPlayer } from 'types/Player'
 import { flatten } from 'utils/flatten'
 import { getSquare } from 'utils/getCoordinates'
 import {
-  TPlayer,
   generatePositionsTree,
   getPlayerEvaluation
 } from 'utils/getPlayerEvaluation'

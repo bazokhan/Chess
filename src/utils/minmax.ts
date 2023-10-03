@@ -1,24 +1,32 @@
 import { TCell, TreeItem } from 'types/Cell'
-import { TPlayer, getPlayerEvaluation } from './getPlayerEvaluation'
+import { evaluatePosition, getPlayerEvaluation } from './getPlayerEvaluation'
+import { TPlayer } from 'types/Player'
 
 export const minmax = ({
   tree,
   depth,
   alpha,
   beta,
-  player
+  player,
+  version = 2
 }: {
   tree: TreeItem
   depth: number
   alpha: number
   beta: number
   player: TPlayer
+  version: number
 }) => {
   const children = tree.next ?? []
   if (depth <= 0 || !children.length) {
     const evaluation =
-      getPlayerEvaluation(player, tree?.position as TCell[]) -
-      getPlayerEvaluation(player === 'w' ? 'b' : 'w', tree?.position as TCell[])
+      version === 1
+        ? getPlayerEvaluation(player, tree?.position as TCell[]) -
+          getPlayerEvaluation(
+            player === 'w' ? 'b' : 'w',
+            tree?.position as TCell[]
+          )
+        : evaluatePosition(player, tree?.position as TCell[])
     const res = player === 'w' ? evaluation : -evaluation
     return res
   }
@@ -31,7 +39,8 @@ export const minmax = ({
         depth: depth - 1,
         alpha,
         beta,
-        player: 'b'
+        player: 'b',
+        version
       })
       maxEval = Math.max(maxEval, nextEval)
       alpha = Math.max(alpha, nextEval)
@@ -48,7 +57,8 @@ export const minmax = ({
         depth: depth - 1,
         alpha,
         beta,
-        player: 'w'
+        player: 'w',
+        version
       })
       minEval = Math.min(minEval, nextEval)
       beta = Math.min(beta, nextEval)

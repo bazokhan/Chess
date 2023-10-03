@@ -5,7 +5,7 @@ import {
   useContext,
   useState
 } from 'react'
-import { TPlayer } from 'utils/getPlayerEvaluation'
+import { TPlayer } from 'types/Player'
 
 const TurnContext = createContext<{
   turn: TPlayer
