@@ -8,17 +8,19 @@ import {
   getIsKingChecked,
   getIsWhiteKingCheckMated
 } from 'utils/getChecks'
-import { getSquare } from 'utils/getCoordinates'
+import { getCoordinates, getSquare } from 'utils/getCoordinates'
 import { TPlayer } from 'types/Player'
-import { parseFenPosition } from 'utils/parseFenPosition'
+import { encodeFenPosition, parseFenPosition } from 'utils/parseFenPosition'
 import { isWhite } from 'utils/pieces'
 import { getNewPosition, hash } from 'utils/position'
+import { TSquare } from 'types/Board'
 
 export class Chess {
   position: TCell[]
   turn: TPlayer
   moveNumber: number
   id: string | number
+  lastFenMove: string = ''
   constructor(id: string | number, fenPosition?: string, turn?: TPlayer) {
     console.log(`Initializing game #${id}`)
     this.id = id
@@ -27,6 +29,14 @@ export class Chess {
       : initialPosition
     this.turn = turn ?? 'w'
     this.moveNumber = 0
+  }
+
+  async makeFenMove(fenMove: string) {
+    const [toBeMoved, destination] = [fenMove.slice(0, 2), fenMove.slice(2)]
+    const cell = this.position.find((c) => c.square === toBeMoved)
+    const coordinate = getCoordinates(destination as TSquare)
+    if (!cell) return false
+    await this.movePieceToCoordinate({ cell, coordinate, skipHistory: true })
   }
 
   private movePieces(cellsAndCoordinates: [TCell, TCoordinate][]) {
@@ -61,9 +71,6 @@ export class Chess {
     if (cell.piece[0] !== turnToConsider)
       return { success: false, position: this.position }
 
-    if (!skipToggleTurn) {
-      this.toggleTurn()
-    }
     // Castle
     if (
       coordinate.type === 'castle' &&
@@ -76,11 +83,23 @@ export class Chess {
       ])
 
       this.position = newPosition
+      this.lastFenMove = `${cell.piece}${getSquare(coordinate)}`
+      this.moveNumber += 1
+      console.log(`${this.turn} played ${this.lastFenMove}`)
+      if (!skipToggleTurn) {
+        this.toggleTurn()
+      }
       return { success: true, position: newPosition }
     } else {
       const { newPosition } = getNewPosition(cell, coordinate, this.position)
 
       this.position = newPosition
+      this.lastFenMove = `${cell.square}${getSquare(coordinate)}`
+      this.moveNumber += 1
+      console.log(`${this.turn} played ${this.lastFenMove}`)
+      if (!skipToggleTurn) {
+        this.toggleTurn()
+      }
       return { success: true, position: newPosition }
     }
   }
@@ -171,6 +190,7 @@ export class Chess {
         skipAnimation: true,
         skipHistory: true
       })
+
       if (log) {
         console.log(
           `Moved ${bestMove.piece.piece} from ${
@@ -181,13 +201,13 @@ export class Chess {
     }
   }
 
-  async runMatch(log: boolean = false) {
+  async runMatch(log: boolean = false, cb?: () => void) {
     const start = Date.now()
     console.log(`Game ${this.id} starting at ${new Date().toLocaleString()}..`)
 
     while (!this.isGameOver && this.moveNumber < 200) {
       await this.handleAIPlay(this.turn, log)
-      this.moveNumber += 1
+      await cb?.()
     }
 
     const end = Date.now()
@@ -200,7 +220,10 @@ export class Chess {
       : this.moveNumber >= 200
       ? 'Game ended due to exceeding move limit'
       : 'Unknown status'
-    logText += `final position is ${JSON.stringify(this.position, null, 2)}`
+    logText += `. Final position is ${encodeFenPosition(
+      this.position,
+      this.turn
+    )}`
     console.log(
       `Game over at ${new Date().toLocaleString()} in ${
         this.moveNumber

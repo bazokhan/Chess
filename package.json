@@ -19,7 +19,10 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "lint": "eslint src --max-warnings=0",
-    "typecheck": "tsc --project tsconfig.json --noEmit"
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "botMatch": "pnpx esbuild ./scripts/botMatch.ts --outfile=./dist/scripts/botMatch.js --bundle --platform=node --target=node18 && node ./dist/scripts/botMatch.js",
+    "readChessPuzzles": "pnpx esbuild ./scripts/readChessPuzzles.ts --outfile=./dist/scripts/readChessPuzzles.js --bundle --platform=node --target=node18 && node ./dist/scripts/readChessPuzzles.js",
+    "solvePuzzle": "pnpx esbuild ./scripts/solvePuzzle.ts --outfile=./dist/scripts/solvePuzzle.js --bundle --platform=node --target=node18 && node ./dist/scripts/solvePuzzle.js"
   },
   "dependencies": {
     "react": "^18.2.0",

@@ -13,8 +13,6 @@ const EvalBar = ({ fen }: { fen: string }) => {
 
   const cache = useRef<Record<string, StockFishRes>>({})
 
-  console.log({ stockFishRes })
-
   useEffect(() => {
     const id = fen.split(' ')[0]
     if (cache.current[id]) {
@@ -43,8 +41,6 @@ const EvalBar = ({ fen }: { fen: string }) => {
       (turn === 'w' ? 1 : -1)
     )
   }, [stockFishRes.evaluation, turn])
-
-  console.log({ wHeight })
 
   const mate = useMemo(() => {
     const isMate = stockFishRes.evaluation?.includes('mate')

@@ -28,8 +28,9 @@ export class CSVReader {
             this.records.push(record)
             record = this.parser.read()
           }
-        } catch (err) {
-          console.log(err)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (err: any) {
+          console.log(err?.message)
         }
       })
 
@@ -56,7 +57,7 @@ export class CSVReader {
         .on('error', (err) => {
           console.error(err)
           readStream.destroy()
-          reject(false)
+          reject(err?.message ?? 'Something went wrong')
         })
     })
   }

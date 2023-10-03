@@ -1,0 +1,110 @@
+export const mateIn2Puzzles = [
+  [
+    '8',
+    '001Wz',
+    '4r1k1/5ppp/r1p5/p1n1RP2/8/2P2N1P/2P3P1/3R2K1 b - - 0 21',
+    'e8e5 d1d8 e5e8 d8e8',
+    '1128',
+    '81',
+    '87',
+    '62',
+    'backRankMate endgame mate mateIn2 short',
+    'https://lichess.org/84RH3LaP/black#42'
+  ],
+  [
+    '11',
+    '001om',
+    '5r1k/pp4pp/5p2/1BbQp1r1/6K1/7P/1PP3P1/3R3R w - - 2 26',
+    'g4h4 c5f2 g2g3 f2g3',
+    '991',
+    '78',
+    '89',
+    '216',
+    'mate mateIn2 middlegame short',
+    'https://lichess.org/VWOIWtIh#51'
+  ],
+  [
+    '13',
+    '001w5',
+    '1rb2rk1/q5P1/4p2p/3p3p/3P1P2/2P5/2QK3P/3R2R1 b - - 0 29',
+    'f8f7 c2h7 g8h7 g7g8q',
+    '1444',
+    '140',
+    '79',
+    '21',
+    'advancedPawn attraction mate mateIn2 middlegame promotion short',
+    'https://lichess.org/0e1vxAEn/black#58'
+  ],
+  [
+    '25',
+    '003Tx',
+    '2r5/pR5p/5p1k/4p3/4r3/B4nPP/PP3P2/1K2R3 w - - 0 27',
+    'e1e4 f3d2 b1a1 c8c1',
+    '1648',
+    '84',
+    '85',
+    '569',
+    'backRankMate endgame fork mate mateIn2 short',
+    'https://lichess.org/A7j9VEC0#53'
+  ],
+  [
+    '31',
+    '0042j',
+    '3r2k1/4nppp/pq1p1b2/1p2P3/2r2P2/2P1NR2/PP1Q2BP/3R2K1 b - - 0 24',
+    'd6e5 d2d8 b6d8 d1d8',
+    '652',
+    '78',
+    '98',
+    '791',
+    'backRankMate mate mateIn2 middlegame short',
+    'https://lichess.org/DuM2FZjg/black#48'
+  ],
+  [
+    '37',
+    '004X6',
+    '1r4k1/p4ppp/2Q5/3pq3/8/P6P/2PR1PP1/Rr4K1 w - - 1 26',
+    'a1b1 b8b1 d2d1 b1d1',
+    '1176',
+    '278',
+    '83',
+    '11',
+    'endgame mate mateIn2 short',
+    'https://lichess.org/wvPFkjF9#51'
+  ],
+  [
+    '47',
+    '005N7',
+    'r6k/2q3pp/8/2p1n3/R1Qp4/7P/2PB1PP1/6K1 b - - 0 32',
+    'e5c4 a4a8 c7b8 a8b8',
+    '600',
+    '97',
+    '93',
+    '1126',
+    'backRankMate endgame hangingPiece mate mateIn2 short',
+    'https://lichess.org/jxZhmGhg/black#64'
+  ],
+  [
+    '55',
+    '0061g',
+    '6k1/pp3pp1/2p1q1Pp/3b4/8/6Q1/PB3Pp1/3RrNK1 b - - 2 27',
+    'e1d1 g3b8 e6e8 b8e8',
+    '773',
+    '90',
+    '72',
+    '250',
+    'endgame mate mateIn2 short',
+    'https://lichess.org/dJ3xEKJK/black#54'
+  ],
+  [
+    '3',
+    '000Zo',
+    '4r3/1k6/pp3r2/1b2P2p/3R1p2/P1R2P2/1P4PP/6K1 w - - 0 35',
+    'e5f6 e8e1 g1f2 e1f1',
+    '1652',
+    '149',
+    '100',
+    '23',
+    'endgame mate mateIn2 short',
+    'https://lichess.org/n8Ff742v#69'
+  ]
+]
