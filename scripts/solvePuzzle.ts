@@ -1,7 +1,7 @@
-import { Chess } from 'classes/Chess'
-import { mateIn1Puzzles } from 'data/mateIn1Puzzles'
+import { Chess } from '../src/classes/Chess'
+import { mateIn1Puzzles } from '../src/data/mateIn1Puzzles'
 import { Model } from './readChessPuzzles'
-import { TPlayer } from 'utils/getPlayerEvaluation'
+import { TPlayer } from '../src/utils/getPlayerEvaluation'
 
 mateIn1Puzzles.forEach((puzzle, index) => {
   if (index !== 0) return

@@ -1,4 +1,6 @@
+import { TCell } from 'types/Cell'
 import { getSquare } from './getCoordinates'
+import { TPlayer } from './getPlayerEvaluation'
 
 const getXY = (index: number) => {
   const x = index % 8
@@ -28,4 +30,42 @@ export const parseFenPosition = (fen: string) => {
       return { ...piece, square: getSquare(getXY(index)) }
     })
     .filter(Boolean)
+}
+
+export const encodeFenPosition = (oldPosition: TCell[], turn: TPlayer) => {
+  let position = ''
+  let empty = 0
+  let currentLineSpaces = 0
+  for (let y = 0; y < 8; y += 1) {
+    for (let x = 0; x < 8; x += 1) {
+      const square = getSquare({ x, y })
+      if (currentLineSpaces >= 8) {
+        if (empty) {
+          position += empty
+        }
+        position += '/'
+        empty = 0
+        currentLineSpaces = 0
+      }
+      const foundPiece = oldPosition.find((c) => c.square === square)
+      if (foundPiece) {
+        if (empty) {
+          position += empty
+        }
+        const pieceNotation =
+          foundPiece.piece[0] === 'w'
+            ? foundPiece.piece[1].toUpperCase()
+            : foundPiece.piece[1]
+        position += pieceNotation
+        empty = 0
+      } else {
+        empty += 1
+      }
+      currentLineSpaces += 1
+    }
+  }
+  if (empty) {
+    position += empty
+  }
+  return [position, turn, '- - 0 1'].join(' ')
 }

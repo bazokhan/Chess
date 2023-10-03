@@ -13,7 +13,6 @@ import {
 import { useTurnContext } from './TurnContext'
 import { usePositionContext } from './PositionContext'
 import { TPlayer } from 'utils/getPlayerEvaluation'
-import { calculateBestMoveV1 } from 'utils/engines/v1'
 import { calculateBestMoveV2 } from 'utils/engines/v2'
 import { fileLog } from 'utils/fileLog'
 
@@ -52,7 +51,7 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
 
   const handleAIPlay = useCallback(
     async (playerTurn?: TPlayer) => {
-      const fn = playerTurn === 'b' ? calculateBestMoveV1 : calculateBestMoveV2
+      const fn = calculateBestMoveV2
 
       const bestMove = fn({
         turn: playerTurn ?? turn,

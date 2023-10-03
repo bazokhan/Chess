@@ -1,7 +1,6 @@
 import { initialPosition } from 'data/normalInitialPosition'
 import { TCell, TCoordinate, TPosition } from 'types/Cell'
 import { HistoryItem } from 'types/History'
-// import { calculateBestMoveV1 } from 'utils/engines/v1'
 import { calculateBestMoveV2 } from 'utils/engines/v2'
 import { fileLog } from 'utils/fileLog'
 import {
@@ -159,7 +158,6 @@ export class Chess {
   }
 
   private async handleAIPlay(playerTurn?: TPlayer, log: boolean = false) {
-    // const fn = playerTurn === 'b' ? calculateBestMoveV1 : calculateBestMoveV2
     const fn = calculateBestMoveV2
     const bestMove = fn({
       turn: playerTurn ?? this.turn,

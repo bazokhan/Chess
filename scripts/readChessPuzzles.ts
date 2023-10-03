@@ -1,4 +1,4 @@
-import { CSVReader } from 'classes/CSVReader'
+import { CSVReader } from '../src/classes/CSVReader'
 
 const csvReader = new CSVReader('data_sets/lichess_puzzle_transformed.csv')
 

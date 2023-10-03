@@ -1,4 +1,4 @@
-import { Chess } from 'classes/Chess'
+import { Chess } from '../src/classes/Chess'
 
 const GAMES_COUNT = 10
 

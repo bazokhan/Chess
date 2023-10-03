@@ -16,6 +16,7 @@ import {
   printMoves
 } from 'utils/getPlayerEvaluation'
 import { useDebugContext } from 'context/DebugContext'
+import EvalBar from './EvalBar'
 
 export const Layout: FC<PropsWithChildren> = ({ children }) => {
   const {
@@ -31,7 +32,8 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
     isBlackKingCheckMated,
     isWhiteKingStaleMated,
     isBlackKingStaleMated,
-    resetPosition
+    resetPosition,
+    fen
   } = usePositionContext()
 
   const { turn } = useTurnContext()
@@ -42,8 +44,9 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
   return (
     <div
       className="grid h-full w-full gap-8 p-20"
-      style={{ gridTemplateColumns: 'auto 300px' }}
+      style={{ gridTemplateColumns: '5px auto 300px' }}
     >
+      <EvalBar fen={fen} />
       {children}
       <div className="flex flex-col bg-[#383734] p-4 text-[#9c9b9a]">
         <div className="h-full max-h-[200px] overflow-y-auto">
@@ -143,7 +146,7 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
         <div className="flex w-full py-3 text-3xl font-black">
           <button
             className="flex w-full items-center justify-center text-green-600 hover:text-green-500"
-            onClick={() => handleAIPlay()}
+            onClick={() => handleAIPlay(turn)}
           >
             <FaChessPawn />
           </button>

@@ -17,17 +17,19 @@ import {
   getIsKingChecked,
   getIsWhiteKingCheckMated
 } from 'utils/getChecks'
-import { parseFenPosition } from 'utils/parseFenPosition'
+import { encodeFenPosition, parseFenPosition } from 'utils/parseFenPosition'
 import { initialPosition } from 'data/normalInitialPosition'
 import { isWhite } from 'utils/pieces'
 
-const positions = {
-  random: '8/3Pk3/2KN2r1/8/5n2/8/8/3R4 b - - 0 76',
-  normal: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR',
-  stalemate: '3k4/3P4/3K4/8/8/8/8/7R',
-  promotion: '8/3P4/3K4/8/8/8/8/7R'
-}
-const initPosition = parseFenPosition(positions.normal)
+// const positions = {
+//   random: '8/3Pk3/2KN2r1/8/5n2/8/8/3R4 b - - 0 76',
+//   normal: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR',
+//   stalemate: '3k4/3P4/3K4/8/8/8/8/7R',
+//   promotion: '8/3P4/3K4/8/8/8/8/7R'
+// }
+const initPosition = parseFenPosition(
+  '8/3pk3/R7/1R2Pp1p/2PPnKr1/8/8/8 w - - 4 43'
+)
 // const initPosition = initialPosition
 
 const PositionContext = createContext<{
@@ -62,6 +64,7 @@ const PositionContext = createContext<{
   promotionType: TPromotion
   hPosition: TPosition
   resetPosition: () => void
+  fen: string
 }>({
   position: initialPosition,
   movePieceToCoordinate: () => {},
@@ -81,7 +84,8 @@ const PositionContext = createContext<{
   setPromotionType: () => {},
   promotionType: 'Q',
   hPosition: {} as TPosition,
-  resetPosition: () => {}
+  resetPosition: () => {},
+  fen: encodeFenPosition(initialPosition, 'w')
 })
 
 export const usePositionContext = () => useContext(PositionContext)
@@ -255,6 +259,8 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
     isWhiteKingStaleMated ||
     isBlackKingStaleMated
 
+  const fen = encodeFenPosition(position, turn)
+
   return (
     <PositionContext.Provider
       value={{
@@ -276,7 +282,8 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
         promotionType,
         setPromotionType,
         hPosition,
-        resetPosition
+        resetPosition,
+        fen
       }}
     >
       {children}

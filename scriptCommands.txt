@@ -1,0 +1,3 @@
+"botMatch": "pnpx esbuild ./src/scripts/botMatch.ts --outfile=./dist/scripts/botMatch.js --bundle --platform=node --target=node18 && node ./dist/scripts/botMatch.js",
+"readChessPuzzles": "pnpx esbuild ./src/scripts/readChessPuzzles.ts --outfile=./dist/scripts/readChessPuzzles.js --bundle --platform=node --target=node18 && node ./dist/scripts/readChessPuzzles.js",
+"solvePuzzle": "pnpx esbuild ./src/scripts/solvePuzzle.ts --outfile=./dist/scripts/solvePuzzle.js --bundle --platform=node --target=node18 && node ./dist/scripts/solvePuzzle.js"
