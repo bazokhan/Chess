@@ -9,7 +9,9 @@ import {
   getIsKingChecked,
   getIsWhiteKingCheckMated
 } from 'utils/getChecks'
+import { getSquare } from 'utils/getCoordinates'
 import { TPlayer } from 'utils/getPlayerEvaluation'
+import { parseFenPosition } from 'utils/parseFenPosition'
 import { isWhite } from 'utils/pieces'
 import { getNewPosition, hash } from 'utils/position'
 
@@ -18,11 +20,13 @@ export class Chess {
   turn: TPlayer
   moveNumber: number
   id: string | number
-  constructor(id: string | number) {
+  constructor(id: string | number, fenPosition?: string, turn?: TPlayer) {
     console.log(`Initializing game #${id}`)
     this.id = id
-    this.position = initialPosition
-    this.turn = 'w'
+    this.position = fenPosition
+      ? parseFenPosition(fenPosition)
+      : initialPosition
+    this.turn = turn ?? 'w'
     this.moveNumber = 0
   }
 
@@ -154,7 +158,7 @@ export class Chess {
     )
   }
 
-  private async handleAIPlay(playerTurn?: TPlayer) {
+  private async handleAIPlay(playerTurn?: TPlayer, log: boolean = false) {
     // const fn = playerTurn === 'b' ? calculateBestMoveV1 : calculateBestMoveV2
     const fn = calculateBestMoveV2
     const bestMove = fn({
@@ -169,15 +173,22 @@ export class Chess {
         skipAnimation: true,
         skipHistory: true
       })
+      if (log) {
+        console.log(
+          `Moved ${bestMove.piece.piece} from ${
+            bestMove.piece.square
+          } to ${getSquare(bestMove.move)}`
+        )
+      }
     }
   }
 
-  async runMatch() {
+  async runMatch(log: boolean = false) {
     const start = Date.now()
     console.log(`Game ${this.id} starting at ${new Date().toLocaleString()}..`)
 
     while (!this.isGameOver && this.moveNumber < 200) {
-      await this.handleAIPlay(this.turn)
+      await this.handleAIPlay(this.turn, log)
       this.moveNumber += 1
     }
 
