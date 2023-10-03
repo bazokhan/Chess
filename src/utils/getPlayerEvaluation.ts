@@ -1,7 +1,7 @@
 import { TCell, TCoordinate, TreeItem } from 'types/Cell'
 import { getAvailableMoves } from './getAvailableMoves'
 import { getSquare } from './getCoordinates'
-import { getNewPosition } from './position'
+import { makeMove } from './position'
 import { fileLog } from './fileLog'
 import { TPlayer } from 'types/Player'
 import { getIsKingCheckMated } from './getChecks'
@@ -111,17 +111,21 @@ export const generateAllNextMoves = (player: TPlayer, position: TCell[]) => {
   const availableMoves = ownPieces
     .map((piece) => {
       const moves = getAvailableMoves(piece, position)
+      if (!moves.length) return undefined
       return { piece, moves }
     })
-    .filter((m) => m.moves.length)
-  return availableMoves
+    .filter(Boolean)
+  return availableMoves as {
+    piece: TCell
+    moves: TCoordinate[]
+  }[]
 }
 
 export const generatePositionsTree = (
   turn: TPlayer,
   position: TCell[],
   depth: number,
-  log = true
+  log = false
 ): TreeItem[] => {
   if (!depth) return []
   const start = Date.now()
@@ -129,7 +133,7 @@ export const generatePositionsTree = (
   const result = nextMoves
     .map(({ piece, moves }) => {
       const result = moves.map((move) => {
-        const { newPosition } = getNewPosition(piece, move, position)
+        const newPosition = makeMove(piece, move, position)
         const res = {
           piece,
           move,

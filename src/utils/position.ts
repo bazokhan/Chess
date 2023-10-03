@@ -24,6 +24,30 @@ export const getRankSquaresBetween = (square1: TSquare, square2: TSquare) => {
   return squares
 }
 
+export const makeMove = (
+  cell: TCell,
+  coordinate: TCoordinate,
+  position: TCell[],
+  promotionType: TPromotion = 'Q'
+) => {
+  const hashed = hash(position)
+  const newSquare = getSquare(coordinate)
+
+  const newCell = { ...cell, square: newSquare, moved: true }
+  if (
+    (cell.piece === 'wp' && coordinate.y === 0) ||
+    (cell.piece === 'bp' && coordinate.y === 7)
+  ) {
+    newCell.piece = `${cell.piece[0]}${promotionType.toLowerCase()}` as TPiece
+  }
+
+  const newPosition = { ...hashed }
+  delete newPosition[cell.square]
+  newPosition[newSquare] = newCell
+
+  return Object.values(newPosition)
+}
+
 type PositionReturnType = {
   move: HistoryItem
   newPosition: TCell[]
@@ -34,22 +58,13 @@ type PositionReturnType = {
     piece: TPiece
   }
 }
-const cache: Record<string, PositionReturnType> = {}
 
 export const getNewPosition = (
   cell: TCell,
   coordinate: TCoordinate,
   position: TCell[],
   promotionType: TPromotion = 'Q'
-) => {
-  const id = `${cell.piece}-${cell.square}-${coordinate.x}-${coordinate.y}-${
-    coordinate.type
-  }-${coordinate.relatedPiece?.piece}-${coordinate.relatedPiece
-    ?.square}-${coordinate.relatedCoordinates?.x}-${coordinate
-    .relatedCoordinates?.y}-${promotionType}-${JSON.stringify(position)}`
-  if (cache[id]) {
-    return cache[id]
-  }
+): PositionReturnType => {
   const hashed = hash(position)
   const oldCoordinates = getCoordinates(cell.square)
   const newSquare = getSquare(coordinate)
@@ -83,7 +98,6 @@ export const getNewPosition = (
     newCell
   }
 
-  cache[id] = result
   return result
 }
 
