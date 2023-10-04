@@ -139,9 +139,6 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
     // Not their turn
     if (cell.piece[0] !== turnToConsider) return { success: false, position }
 
-    if (!skipToggleTurn) {
-      toggleTurn()
-    }
     // Castle
     const castlingPositions = { wk: ['c1', 'g1'], bk: ['c8', 'g8'] }
     const rooks = { c1: 'a1', g1: 'h1', c8: 'a8', g8: 'h8' }
@@ -169,6 +166,9 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
         )
       }
       setPosition(newPosition)
+      if (!skipToggleTurn) {
+        toggleTurn()
+      }
       return { success: true, position: newPosition }
     } else {
       const { move, newPosition } = makeMove(cell, coordinate, position)
@@ -180,6 +180,9 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
         await tween([[cell, parseFenMove(move)]])
       }
       setPosition(newPosition)
+      if (!skipToggleTurn) {
+        toggleTurn()
+      }
       return { success: true, position: newPosition }
     }
   }

@@ -7,7 +7,7 @@ export const calculateBestMoveV2 = ({
   turn,
   position,
   depth = 3,
-  // time = 1000,
+  time = 3000,
   minmaxVersion = 2
 }: {
   turn: TPlayer
@@ -16,11 +16,11 @@ export const calculateBestMoveV2 = ({
   time?: number
   minmaxVersion: number
 }): TreeItem | null => {
-  // const before = Date.now()
+  const before = Date.now()
   const tree = generatePositionsTree(turn, position, depth)
   console.log(turn)
-  // let originalDepth = 1
-  const best = tree
+  let originalDepth = 1
+  let best = tree
     .map((branch, index) => ({
       ...branch,
       evaluation: minmax({
@@ -35,26 +35,25 @@ export const calculateBestMoveV2 = ({
     }))
     .sort((a, b) => b.evaluation - a.evaluation)
 
-  console.log(best)
+  originalDepth += 1
 
-  // originalDepth += 1
-
-  // while (Date.now() < before + time && originalDepth <= depth) {
-  //   best = tree
-  //     .map((branch) => ({
-  //       ...branch,
-  //       evaluation: minmax({
-  //         tree: branch,
-  //         depth: originalDepth,
-  //         alpha: 0,
-  //         beta: 0,
-  //         player: branch.turn,
-  //         version: minmaxVersion
-  //       })
-  //     }))
-  //     .sort((a, b) => b.evaluation - a.evaluation)
-  //   originalDepth += 1
-  // }
+  while (Date.now() < before + time && originalDepth <= depth) {
+    best = tree
+      .map((branch, index) => ({
+        ...branch,
+        evaluation: minmax({
+          index,
+          tree: branch,
+          depth: originalDepth,
+          alpha: 0,
+          beta: 0,
+          player: branch.turn,
+          version: minmaxVersion
+        })
+      }))
+      .sort((a, b) => b.evaluation - a.evaluation)
+    originalDepth += 1
+  }
 
   return best[turn === 'w' ? 0 : best.length - 1]
 }

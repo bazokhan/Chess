@@ -22,12 +22,22 @@ const DebugContext = createContext<{
   handleAIPlay: (turn?: TPlayer, recordHistory?: boolean) => void
   runMatch: () => void
   setForceStop: Dispatch<SetStateAction<boolean>>
+  aiStopped: boolean
+  aiPlayers: TPlayer[]
+  aiPlayBlack: () => void
+  aiPlayWhite: () => void
+  aiPlayBoth: () => void
 }>({
   setTurnToWhite: () => {},
   setTurnToBlack: () => {},
   handleAIPlay: () => {},
   runMatch: () => {},
-  setForceStop: () => {}
+  setForceStop: () => {},
+  aiStopped: true,
+  aiPlayers: [],
+  aiPlayBlack: () => {},
+  aiPlayWhite: () => {},
+  aiPlayBoth: () => {}
 })
 
 export const useDebugContext = () => useContext(DebugContext)
@@ -49,8 +59,16 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
   const setTurnToWhite = () => setTurn('w')
   const setTurnToBlack = () => setTurn('b')
 
+  const [aiPlayers, setAiPlayers] = useState<TPlayer[]>(['b'])
+  const aiPlayBlack = () => setAiPlayers(['b'])
+  const aiPlayWhite = () => setAiPlayers(['w'])
+  const aiPlayBoth = () => setAiPlayers(['w', 'b'])
+
   const handleAIPlay = useCallback(
     async (playerTurn?: TPlayer, recordHistory?: boolean) => {
+      if (forceStop && !playerTurn) return
+      console.log(turn, aiPlayers)
+      if (!aiPlayers.includes(turn)) return
       const bestMove = calculateBestMoveV2({
         turn: playerTurn ?? turn,
         position,
@@ -65,15 +83,17 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
           skipHistory: !recordHistory
         })
       }
+
+      return true
     },
-    [movePieceToCoordinate, position, turn]
+    [aiPlayers, forceStop, movePieceToCoordinate, position, turn]
   )
 
   const runMatch = async () => {}
 
   useEffect(() => {
     if (moveRef.current === moveNumber) return
-    if (isGameOver || forceStop) {
+    if (isGameOver || forceStop || !aiPlayers.includes(turn)) {
       const logText = isBlackKingCheckMated
         ? 'White won by checkmate'
         : isWhiteKingCheckMated
@@ -98,6 +118,7 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
     }
     play()
   }, [
+    aiPlayers,
     forceStop,
     handleAIPlay,
     isBlackKingCheckMated,
@@ -116,7 +137,12 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
         setTurnToBlack,
         handleAIPlay,
         runMatch,
-        setForceStop
+        setForceStop,
+        aiStopped: forceStop,
+        aiPlayers,
+        aiPlayBlack,
+        aiPlayWhite,
+        aiPlayBoth
       }}
     >
       {children}
