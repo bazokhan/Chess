@@ -1,24 +1,22 @@
-import { Board } from './Board'
-import { BoardProvider } from 'context/BoardContext'
-import { PositionProvider } from 'context/PositionContext'
-import { Layout } from './Layout'
-import { TurnProvider } from 'context/TurnContext'
-import { DebugProvider } from 'context/DebugContext'
+import { ChessPage } from 'pages/Chess'
+import { TicTacToePage } from 'pages/TicTacToe'
+import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+
+const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <ChessPage />
+  },
+  {
+    path: '/tictactoe',
+    element: <TicTacToePage />
+  }
+])
 
 const App = () => {
   return (
     <div className="flex h-screen w-screen items-center justify-center bg-gradient-to-b from-[#31302c] to-[#51504c] text-white">
-      <TurnProvider>
-        <PositionProvider>
-          <BoardProvider>
-            <DebugProvider>
-              <Layout>
-                <Board />
-              </Layout>
-            </DebugProvider>
-          </BoardProvider>
-        </PositionProvider>
-      </TurnProvider>
+      <RouterProvider router={router} />
     </div>
   )
 }
