@@ -18,10 +18,10 @@ import {
 import { useDebugContext } from 'context/DebugContext'
 import EvalBar from './EvalBar'
 import { useDisclosure } from 'hooks/useDisclosure'
-import { Switch } from './ui/Switch'
-import { Paragraph } from './ui/Paragraph'
+import { Switch } from '../ui/Switch'
+import { Paragraph } from '../ui/Paragraph'
 import { GameLayout } from 'components/layouts/GameLayout'
-import { Column } from './layouts/Column'
+import { Column } from '../layouts/Column'
 
 export const Layout: FC<PropsWithChildren> = ({ children }) => {
   const {
