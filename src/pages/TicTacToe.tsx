@@ -1,4 +1,7 @@
-import { useState } from 'react'
+import { Column } from 'components/layouts/Column'
+import { GameLayout } from 'components/layouts/GameLayout'
+import { Switch } from 'components/ui/Switch'
+import { FC, useState } from 'react'
 
 const DIAGONALS = {
   3: [
@@ -75,38 +78,44 @@ class TicTacToe {
 
 const game = new TicTacToe(3)
 
-export const TicTacToePage = () => {
+export const TicTacToePage: FC = () => {
   const [board, setBoard] = useState(game.board)
 
   return (
-    <div>
-      <div
-        className="grid bg-white"
-        style={{ gridTemplateColumns: `repeat(${3}, auto)` }}
-      >
-        {board.map((piece, index) => (
-          <div
-            key={`${piece}-${index}`}
-            className="flex h-[100px] w-[100px] items-center justify-center border border-black text-4xl font-normal text-black"
-            onClick={() => {
-              game.addPiece(index)
-              setBoard([...game.board])
-            }}
-          >
-            {piece === 1 ? 'X' : piece === -1 ? 'O' : ''}
-          </div>
-        ))}
-      </div>
-      <p>
-        {game.winner === 1
-          ? 'X won!'
-          : game.winner === -1
-          ? 'O won!'
-          : game.winner === 0
-          ? 'Draw!'
-          : ''}
-      </p>
-      <button onClick={() => game.printBoard()}>Reset</button>
-    </div>
+    <GameLayout>
+      <Column>
+        <div
+          className="grid bg-white"
+          style={{ gridTemplateColumns: `repeat(${3}, auto)` }}
+        >
+          {board.map((piece, index) => (
+            <div
+              key={`${piece}-${index}`}
+              className="flex h-[150px] w-[150px] items-center justify-center border border-black text-4xl font-normal text-black"
+              onClick={() => {
+                game.addPiece(index)
+                setBoard([...game.board])
+              }}
+            >
+              {piece === 1 ? 'X' : piece === -1 ? 'O' : ''}
+            </div>
+          ))}
+        </div>
+      </Column>
+      <Column width={300}>
+        <p>
+          {game.winner === 1
+            ? 'X won!'
+            : game.winner === -1
+            ? 'O won!'
+            : game.winner === 0
+            ? 'Draw!'
+            : ''}
+        </p>
+        <Switch active={false} onClick={() => game.printBoard()}>
+          Console Board
+        </Switch>
+      </Column>
+    </GameLayout>
   )
 }

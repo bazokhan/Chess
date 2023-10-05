@@ -1,6 +1,6 @@
 import { usePositionContext } from 'context/PositionContext'
 import { useTurnContext } from 'context/TurnContext'
-import { ButtonHTMLAttributes, FC, PropsWithChildren } from 'react'
+import { FC, PropsWithChildren } from 'react'
 import {
   LuChevronLast,
   LuChevronFirst,
@@ -9,7 +9,7 @@ import {
   LuStopCircle,
   LuRedo
 } from 'react-icons/lu'
-import { FaCheck, FaChessPawn } from 'react-icons/fa'
+import { FaChessPawn } from 'react-icons/fa'
 import {
   generateAllNextMoves,
   getPlayerEvaluation,
@@ -18,43 +18,10 @@ import {
 import { useDebugContext } from 'context/DebugContext'
 import EvalBar from './EvalBar'
 import { useDisclosure } from 'hooks/useDisclosure'
-
-const Switch: FC<
-  PropsWithChildren &
-    ButtonHTMLAttributes<HTMLButtonElement> & {
-      active: boolean
-      hideCheck?: boolean
-    }
-> = ({ children, className, active, hideCheck, ...props }) => {
-  return (
-    <button
-      className={`flex items-center justify-start rounded-md border-b-2 border-black ${
-        active ? (hideCheck ? 'bg-green-900' : 'bg-[#4c4b47]') : 'bg-[#41403d]'
-      } p-4 font-black text-white text-opacity-80 transition-all hover:bg-[#4c4b47] ${className}`}
-      {...props}
-    >
-      {children}
-      {active && !hideCheck ? (
-        <FaCheck className="ml-auto mr-0 text-green-500" />
-      ) : null}
-    </button>
-  )
-}
-
-const Paragraph: FC<PropsWithChildren & { className?: string }> = ({
-  children,
-  className,
-  ...props
-}) => {
-  return (
-    <p
-      className={`rounded-md border-b-2 border-black bg-[#41403d] p-4 font-black text-opacity-80 transition-all hover:bg-[#4c4b47] ${className}`}
-      {...props}
-    >
-      {children}
-    </p>
-  )
-}
+import { Switch } from './ui/Switch'
+import { Paragraph } from './ui/Paragraph'
+import { GameLayout } from 'components/layouts/GameLayout'
+import { Column } from './layouts/Column'
 
 export const Layout: FC<PropsWithChildren> = ({ children }) => {
   const {
@@ -90,26 +57,23 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
   const { isOpen: isSnackbarOpen, onToggle: onSnackbarToggle } = useDisclosure()
 
   return (
-    <div
-      className="grid h-full w-full justify-center gap-8 p-20"
-      style={{
-        gridTemplateColumns: isSnackbarOpen
-          ? '5px auto 500px 300px'
-          : 'auto 500px 300px'
-      }}
-    >
-      {isSnackbarOpen ? <EvalBar fen={fen} /> : null}
-      {children}
-      <div className="flex flex-col gap-2 rounded-md bg-[#383734] p-4 text-[#9c9b9a]">
-        <p className="mt-2 text-lg font-bold">Evaluation bar</p>
+    <GameLayout>
+      {isSnackbarOpen ? (
+        <Column>
+          <EvalBar fen={fen} />
+        </Column>
+      ) : null}
+      <Column>{children}</Column>
+      <Column width={500}>
+        <p className="title">Evaluation bar</p>
         <Switch active={isSnackbarOpen} onClick={onSnackbarToggle}>
           {isSnackbarOpen ? 'Disable' : 'Enable'} Eval Bar{' '}
           <span className="ml-4 text-xs font-normal">
             It&apos;s currently {isSnackbarOpen ? 'enabled' : 'disabled'}
           </span>
         </Switch>
-        <p className="mt-2 text-lg font-bold">Turn</p>
-        <div className="flex items-center justify-between gap-2">
+        <p className="title">Turn</p>
+        <div className="btn-group">
           <Switch
             className="w-full"
             onClick={setTurnToBlack}
@@ -133,8 +97,8 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
             </span>
           </Switch>
         </div>
-        <p className="mt-2 text-lg font-bold">Computer play as</p>
-        <div className="flex items-center justify-between gap-2">
+        <p className="title">Computer play as</p>
+        <div className="btn-group">
           <Switch
             className="w-full"
             onClick={aiPlayBlack}
@@ -163,9 +127,9 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
             <span className="ml-4 text-gray-500">Both</span>
           </Switch>
         </div>
-        <div className="flex items-center justify-between gap-2">
+        <div className="btn-group">
           <Switch
-            className="flex w-full items-center justify-center text-[#9c9b9a] hover:text-[#c7c7c7]"
+            className="w-full justify-center"
             onClick={() => {
               setForceStop(true)
               resetPosition()
@@ -177,7 +141,7 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
             <LuRedo />
           </Switch>
           <Switch
-            className="flex w-full items-center justify-center text-[#9c9b9a] hover:text-[#c7c7c7]"
+            className="w-full justify-center"
             onClick={() => setForceStop(true)}
             active={aiStopped}
             disabled={aiStopped}
@@ -186,7 +150,7 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
             <LuStopCircle />
           </Switch>
           <Switch
-            className="flex w-full items-center justify-center text-[#9c9b9a] hover:text-[#c7c7c7]"
+            className="w-full justify-center"
             onClick={() => {
               setForceStop(false)
             }}
@@ -197,11 +161,11 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
             <LuChevronRight />
           </Switch>
         </div>
-        <p className="mt-2 text-lg font-bold">History</p>
-        <div className="flex items-center justify-between gap-2">
+        <p className="title">History</p>
+        <div className="btn-group">
           <Switch
             hideCheck
-            className="flex w-full items-center justify-center text-[#9c9b9a] hover:text-[#c7c7c7]"
+            className="w-full justify-center"
             active={false}
             disabled
           >
@@ -209,7 +173,7 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
           </Switch>
           <Switch
             hideCheck
-            className="flex w-full items-center justify-center text-[#9c9b9a] hover:text-[#c7c7c7]"
+            className="w-full justify-center"
             onClick={moveBackInHistory}
             disabled={!history.length}
             active={!!future.length}
@@ -218,7 +182,7 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
           </Switch>
           <Switch
             hideCheck
-            className="flex w-full items-center justify-center text-[#9c9b9a] hover:text-[#c7c7c7]"
+            className="w-full justify-center"
             onClick={moveForwardInHistory}
             disabled={!future.length}
             active={!!history.length}
@@ -227,22 +191,22 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
           </Switch>
           <Switch
             hideCheck
-            className="flex w-full items-center justify-center text-[#9c9b9a] hover:text-[#c7c7c7]"
+            className="w-full justify-center"
             active={false}
             disabled
           >
             <LuChevronLast />
           </Switch>
         </div>
-      </div>
-      <div className="flex flex-col rounded-md bg-[#383734] p-4 text-[#9c9b9a]">
-        <p className="mt-2 text-lg font-bold">PGN</p>
-        <div className="h-full max-h-[200px] overflow-y-auto">
-          <Paragraph className="min-h-[200px] text-sm font-light text-white">
+      </Column>
+      <Column width={300}>
+        <p className="title">PGN</p>
+        <div className="h-[150px] overflow-y-auto">
+          <Paragraph className="h-full text-sm font-light text-white">
             {pgn?.map((item) => <p key={item}>{item}</p>)}
           </Paragraph>
         </div>
-        <p className="mt-2 text-lg font-bold">Game notifications</p>
+        <p className="title">Game notifications</p>
         <Paragraph className="min-h-[60px] w-full p-2 text-center font-black text-red-200">
           {isWhiteKingCheckMated ? `CHECKMATE - Black Wins!` : null}
           {isBlackKingCheckMated ? `CHECKMATE - White Wins!` : null}
@@ -253,14 +217,16 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
           {isBlackKingInCheck ? `Black King Is In Check!` : null}
         </Paragraph>
 
-        <p className="mt-2 text-lg font-bold">Possible moves</p>
-        {printMoves(generateAllNextMoves(turn, position)).map((text) => (
-          <p key={text} className="m-0 w-full px-2 py-0 text-xs">
-            {text}
-          </p>
-        ))}
-        <p className="mt-2 text-lg font-bold">Piece Evaluation</p>
-        <div className="flex items-center justify-between gap-2">
+        <p className="title">Possible moves</p>
+        <div className="h-[150px] overflow-y-auto">
+          {printMoves(generateAllNextMoves(turn, position)).map((text) => (
+            <p key={text} className="m-0 w-full px-2 py-0 text-xs">
+              {text}
+            </p>
+          ))}
+        </div>
+        <p className="title">Piece Evaluation</p>
+        <div className="btn-group">
           <Paragraph className="w-full text-center text-white">
             {getPlayerEvaluation('w', position)}
           </Paragraph>
@@ -268,12 +234,12 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
             {getPlayerEvaluation('b', position)}
           </Paragraph>
         </div>
-        <p className="mt-2 text-lg font-bold">History</p>
+        <p className="title">History</p>
         <Paragraph>
           Move {history.length ?? 0} /{' '}
           {(future.length ?? 0) + (history.length ?? 0)}
         </Paragraph>
-      </div>
-    </div>
+      </Column>
+    </GameLayout>
   )
 }

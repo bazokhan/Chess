@@ -1,0 +1,7 @@
+.title {
+  @apply mt-2 text-lg font-bold;
+}
+
+.btn-group {
+  @apply flex items-center justify-between gap-2;
+}

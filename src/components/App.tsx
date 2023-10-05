@@ -1,3 +1,4 @@
+import { MainLayout } from 'components/layouts/MainLayout'
 import { ChessPage } from 'pages/Chess'
 import { TicTacToePage } from 'pages/TicTacToe'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
@@ -15,9 +16,9 @@ const router = createBrowserRouter([
 
 const App = () => {
   return (
-    <div className="flex h-screen w-screen items-center justify-center bg-gradient-to-b from-[#31302c] to-[#51504c] text-white">
+    <MainLayout>
       <RouterProvider router={router} />
-    </div>
+    </MainLayout>
   )
 }
 
