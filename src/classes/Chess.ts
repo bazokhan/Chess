@@ -183,7 +183,7 @@ export class Chess {
     const bestMove = calculateBestMoveV2({
       turn: playerTurn ?? this.turn,
       position: this.position,
-      minmaxVersion: 2
+      minimaxVersion: 2
     })
 
     if (bestMove) {

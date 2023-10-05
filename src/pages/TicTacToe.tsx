@@ -18,8 +18,8 @@ const store = {
   },
   subscribe: (setState: Dispatch<SetStateAction<TicTacToe>>) =>
     subject.subscribe(setState as (value: unknown) => void),
-  addPiece: (position: number) => {
-    game.addPiece(position)
+  makeMove: (position: number) => {
+    game.makeMove(position)
     state = { ...game, winner: game.winner }
     subject.next(state)
   },
@@ -27,6 +27,24 @@ const store = {
     game.reset()
     state = { ...game, winner: game.winner }
     subject.next(state)
+  },
+  aiPlayAsX: () => {
+    game.aiPlayAsX()
+    state = { ...game, winner: game.winner }
+    subject.next(state)
+  },
+  aiPlayAsY: () => {
+    game.aiPlayAsY()
+    state = { ...game, winner: game.winner }
+    subject.next(state)
+  },
+  aiPlayAsBoth: () => {
+    game.aiPlayAsBoth()
+    state = { ...game, winner: game.winner }
+    subject.next(state)
+  },
+  printBoard: () => {
+    game.printBoard()
   }
 }
 
@@ -53,7 +71,7 @@ export const TicTacToePage: FC = () => {
                 innerGame.winner !== null
                   ? undefined
                   : () => {
-                      store.addPiece(index)
+                      store.makeMove(index)
                     }
               }
             >
@@ -63,6 +81,48 @@ export const TicTacToePage: FC = () => {
         </div>
       </Column>
       <Column width={300}>
+        <p className="title">Computer play as</p>
+        <div className="btn-group">
+          <Switch
+            className="w-full"
+            onClick={store.aiPlayAsX}
+            disabled={
+              innerGame.aiPlayers.includes(1) &&
+              innerGame.aiPlayers.length === 1
+            }
+            active={
+              innerGame.aiPlayers.includes(1) &&
+              innerGame.aiPlayers.length === 1
+            }
+            hideCheck
+          >
+            <span className="w-full text-center text-black">X</span>
+          </Switch>
+          <Switch
+            className="w-full"
+            onClick={store.aiPlayAsY}
+            disabled={
+              innerGame.aiPlayers.includes(-1) &&
+              innerGame.aiPlayers.length === 1
+            }
+            active={
+              innerGame.aiPlayers.includes(-1) &&
+              innerGame.aiPlayers.length === 1
+            }
+            hideCheck
+          >
+            <span className="w-full text-center text-white">O</span>
+          </Switch>
+          <Switch
+            className="w-full"
+            onClick={store.aiPlayAsBoth}
+            disabled={innerGame.aiPlayers.length === 2}
+            active={innerGame.aiPlayers.length === 2}
+            hideCheck
+          >
+            <span className="w-full text-center text-gray-500">XO</span>
+          </Switch>
+        </div>
         <Paragraph className="min-h-[60px] text-green-400">
           {innerGame.winner === 1
             ? 'X won!'

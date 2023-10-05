@@ -72,7 +72,7 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
       const bestMove = calculateBestMoveV2({
         turn: playerTurn ?? turn,
         position,
-        minmaxVersion: 2
+        minimaxVersion: 2
       })
 
       if (bestMove) {

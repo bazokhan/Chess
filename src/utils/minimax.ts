@@ -2,7 +2,7 @@ import { TCell, TreeItem } from 'types/Cell'
 import { evaluatePosition } from './getPlayerEvaluation'
 import { TPlayer } from 'types/Player'
 
-export const minmax = ({
+export const minimax = ({
   index,
   tree,
   depth,
@@ -38,7 +38,7 @@ export const minmax = ({
   let maxEval = -99999
   let minEval = 99999
   for (const branch of children) {
-    const nextEval = minmax({
+    const nextEval = minimax({
       index,
       tree: branch,
       depth: depth - 1,
