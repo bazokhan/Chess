@@ -11,6 +11,7 @@ import {
 } from 'react-icons/lu'
 import { FaChessPawn } from 'react-icons/fa'
 import {
+  evaluatePosition,
   generateAllNextMoves,
   getPlayerEvaluation,
   printMoves
@@ -22,6 +23,9 @@ import { Switch } from '../ui/Switch'
 import { Paragraph } from '../ui/Paragraph'
 import { GameLayout } from 'components/layouts/GameLayout'
 import { Column } from '../layouts/Column'
+import { SimpleBoard } from './SimpleBoard'
+import { TSquare } from 'types/Board'
+import { TreeItem } from 'types/Cell'
 
 export const Layout: FC<PropsWithChildren> = ({ children }) => {
   const {
@@ -51,11 +55,28 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
     aiPlayers,
     aiPlayBlack,
     aiPlayWhite,
-    aiPlayBoth
+    aiPlayBoth,
+    tree
   } = useDebugContext()
 
   const { isOpen: isSnackbarOpen, onToggle: onSnackbarToggle } = useDisclosure()
-
+  const next = tree.map((p) => ({
+    ...p,
+    evaluation: evaluatePosition(turn === 'w' ? 'b' : 'w', p.position ?? [])
+  }))
+  const filtered = next?.reduce(
+    (acc, current) => {
+      const prevEval =
+        acc[current.move]?.evaluation ?? (turn === 'w' ? -Infinity : Infinity)
+      const currentEval = current.evaluation
+      const higherEval = prevEval > currentEval ? acc[current.move] : current
+      const lowerEval = prevEval < currentEval ? acc[current.move] : current
+      acc[current.move] = turn === 'w' ? higherEval : lowerEval
+      return acc
+    },
+    {} as Record<TSquare, TreeItem & { evaluation?: number }>
+  )
+  const filteredNext = Object.values(filtered)
   return (
     <GameLayout>
       {isSnackbarOpen ? (
@@ -65,6 +86,12 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
       ) : null}
       <Column>{children}</Column>
       <Column width={500}>
+        <SimpleBoard
+          position={position}
+          key={turn}
+          evaluation={evaluatePosition(turn, position)}
+          next={filteredNext}
+        />
         <p className="title">Evaluation bar</p>
         <Switch active={isSnackbarOpen} onClick={onSnackbarToggle}>
           {isSnackbarOpen ? 'Disable' : 'Enable'} Eval Bar{' '}

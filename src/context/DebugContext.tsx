@@ -15,6 +15,9 @@ import { usePositionContext } from './PositionContext'
 import { TPlayer } from 'types/Player'
 import { calculateBestMoveV2 } from 'utils/engines/v2'
 import { fileLog } from 'utils/fileLog'
+import { generatePositionsTree } from 'utils/getPlayerEvaluation'
+import { TreeItem } from 'types/Cell'
+import { minimax } from 'utils/minimax'
 
 const DebugContext = createContext<{
   setTurnToWhite: () => void
@@ -27,6 +30,7 @@ const DebugContext = createContext<{
   aiPlayBlack: () => void
   aiPlayWhite: () => void
   aiPlayBoth: () => void
+  tree: (TreeItem & { evaluation?: number })[]
 }>({
   setTurnToWhite: () => {},
   setTurnToBlack: () => {},
@@ -37,7 +41,8 @@ const DebugContext = createContext<{
   aiPlayers: [],
   aiPlayBlack: () => {},
   aiPlayWhite: () => {},
-  aiPlayBoth: () => {}
+  aiPlayBoth: () => {},
+  tree: []
 })
 
 export const useDebugContext = () => useContext(DebugContext)
@@ -63,6 +68,21 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
   const aiPlayBlack = () => setAiPlayers(['b'])
   const aiPlayWhite = () => setAiPlayers(['w'])
   const aiPlayBoth = () => setAiPlayers(['w', 'b'])
+
+  const tree = generatePositionsTree(turn, position, 1).map(
+    (branch, index) => ({
+      ...branch,
+      evaluation: minimax({
+        index,
+        tree: branch,
+        depth: 1,
+        alpha: -99999,
+        beta: 99999,
+        player: turn,
+        version: 2
+      })
+    })
+  )
 
   const handleAIPlay = useCallback(
     async (playerTurn?: TPlayer, recordHistory?: boolean) => {
@@ -142,7 +162,8 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
         aiPlayers,
         aiPlayBlack,
         aiPlayWhite,
-        aiPlayBoth
+        aiPlayBoth,
+        tree
       }}
     >
       {children}

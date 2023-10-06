@@ -126,7 +126,11 @@ export const Board: FC<BoardProps> = ({ hideCoordinates = false }) => {
           key={`${getCoordinates(m).x}-${getCoordinates(m).y}`}
           x={getCoordinates(m).x}
           y={getCoordinates(m).y}
-          variant="availableMove"
+          variant={
+            position.find((cell) => cell.square === m)
+              ? 'availableCapture'
+              : 'availableMove'
+          }
         />
       ))}
       {history

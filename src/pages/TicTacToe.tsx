@@ -4,7 +4,10 @@ import { GameLayout } from 'components/layouts/GameLayout'
 import { Paragraph } from 'components/ui/Paragraph'
 import { Switch } from 'components/ui/Switch'
 import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react'
+// import { FaXbox } from 'react-icons/fa'
 import { Subject } from 'rxjs'
+import loldoll from 'assets/tictactoe/loldoll.png'
+import minecraftsupersword from 'assets/tictactoe/mcsword.png'
 
 const game = new TicTacToe(3)
 
@@ -75,7 +78,24 @@ export const TicTacToePage: FC = () => {
                     }
               }
             >
-              {piece === 1 ? 'X' : piece === -1 ? 'O' : ''}
+              {piece === 1 ? (
+                <img
+                  src={minecraftsupersword}
+                  className={`${
+                    innerGame.winner === 1 ? 'animate-bounce' : ''
+                  } w-[80px]`}
+                />
+              ) : // <FaXbox className="text-teal-800" />
+              piece === -1 ? (
+                <img
+                  src={loldoll}
+                  className={`${
+                    innerGame.winner === -1 ? 'animate-bounce' : ''
+                  } w-[80px]`}
+                />
+              ) : (
+                ''
+              )}
             </div>
           ))}
         </div>
