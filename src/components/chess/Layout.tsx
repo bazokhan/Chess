@@ -1,6 +1,6 @@
 import { usePositionContext } from 'context/PositionContext'
 import { useTurnContext } from 'context/TurnContext'
-import { FC, PropsWithChildren } from 'react'
+import { FC, PropsWithChildren, useState } from 'react'
 import {
   LuChevronLast,
   LuChevronFirst,
@@ -26,6 +26,10 @@ import { Column } from '../layouts/Column'
 import { SimpleBoard } from './SimpleBoard'
 import { TSquare } from 'types/Board'
 import { TreeItem } from 'types/Cell'
+import { MinimalBoard } from './MinimalBoard'
+import { getCoordinates } from 'utils/getCoordinates'
+
+type Analysis = 'single_board' | 'board_tree' | 'tree_diagram'
 
 export const Layout: FC<PropsWithChildren> = ({ children }) => {
   const {
@@ -62,7 +66,7 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
   const { isOpen: isSnackbarOpen, onToggle: onSnackbarToggle } = useDisclosure()
   const next = tree.map((p) => ({
     ...p,
-    evaluation: evaluatePosition(turn === 'w' ? 'b' : 'w', p.position ?? [])
+    evaluation: evaluatePosition(p.position ?? [])
   }))
   const filtered = next?.reduce(
     (acc, current) => {
@@ -77,6 +81,7 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
     {} as Record<TSquare, TreeItem & { evaluation?: number }>
   )
   const filteredNext = Object.values(filtered)
+  const [analysisMode, setAnalysisMode] = useState<Analysis>('single_board')
   return (
     <GameLayout>
       {isSnackbarOpen ? (
@@ -86,12 +91,88 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
       ) : null}
       <Column>{children}</Column>
       <Column width={500}>
-        <SimpleBoard
-          position={position}
-          key={turn}
-          evaluation={evaluatePosition(turn, position)}
-          next={filteredNext}
-        />
+        <p className="title">Analysis</p>
+        <div className="btn-group">
+          <Switch
+            className="w-full"
+            onClick={() => setAnalysisMode('single_board')}
+            disabled={analysisMode === 'single_board'}
+            active={analysisMode === 'single_board'}
+          >
+            Single Board
+          </Switch>
+          <Switch
+            className="w-full"
+            onClick={() => setAnalysisMode('board_tree')}
+            disabled={analysisMode === 'board_tree'}
+            active={analysisMode === 'board_tree'}
+          >
+            Board Tree
+          </Switch>
+          <Switch
+            className="w-full"
+            onClick={() => setAnalysisMode('tree_diagram')}
+            disabled={analysisMode === 'tree_diagram'}
+            active={analysisMode === 'tree_diagram'}
+          >
+            Diagram
+          </Switch>
+        </div>
+        {analysisMode === 'single_board' ? (
+          <SimpleBoard
+            position={position}
+            key={turn}
+            evaluation={evaluatePosition(position)}
+            next={filteredNext}
+          />
+        ) : null}
+        {analysisMode === 'board_tree' ? (
+          <div className="grid max-h-[400px] grid-cols-2 gap-2 overflow-auto">
+            {tree.map((branch) => (
+              <div className="flex flex-col gap-1" key={branch.move}>
+                <MinimalBoard
+                  position={branch.position}
+                  from={getCoordinates(branch.piece.square)}
+                  to={getCoordinates(branch.move)}
+                />
+                <p>
+                  {branch.piece.piece}
+                  {branch.move}, evaluation:{' '}
+                  {evaluatePosition(branch.position ?? [])}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : null}
+        {analysisMode === 'tree_diagram' ? (
+          <div className="flex w-full max-w-full flex-col items-center justify-start overflow-auto">
+            <p
+              className={`flex h-[48px] w-[48px] items-center justify-center rounded-full border-2 ${
+                turn === 'w' ? 'border-white' : 'border-black'
+              } p-2 font-black text-red-500`}
+            >
+              {evaluatePosition(position)}
+            </p>
+            <div className="flex flex-wrap items-start justify-center">
+              {tree.map((branch) =>
+                branch.position ? (
+                  <div
+                    key={branch.move}
+                    className={`flex h-[48px] w-[48px] flex-col items-center justify-center rounded-full border-2 ${
+                      turn === 'b' ? 'border-white' : 'border-black'
+                    } p-2 font-black text-red-500`}
+                  >
+                    <p className="text-xs font-normal">
+                      {branch.piece.piece}
+                      {branch.move}
+                    </p>
+                    <p>{evaluatePosition(branch.position)}</p>
+                  </div>
+                ) : null
+              )}
+            </div>
+          </div>
+        ) : null}
         <p className="title">Evaluation bar</p>
         <Switch active={isSnackbarOpen} onClick={onSnackbarToggle}>
           {isSnackbarOpen ? 'Disable' : 'Enable'} Eval Bar{' '}

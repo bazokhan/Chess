@@ -24,67 +24,67 @@ export const getPlayerEvaluation = (player: TPlayer, position: TCell[]) => {
 }
 
 type EvaluationHash = {
-  ownPieces: TCell[]
-  opponentPieces: TCell[]
-  ownKing?: TCell
-  opponentKing?: TCell
+  whitePieces: TCell[]
+  blackPieces: TCell[]
+  whiteKing?: TCell
+  blackKing?: TCell
 }
-export const evaluatePosition = (player: TPlayer, position: TCell[]) => {
-  const { ownPieces, opponentPieces, ownKing, opponentKing } =
+export const evaluatePosition = (position: TCell[]) => {
+  const { whitePieces, blackPieces, whiteKing, blackKing } =
     position.reduce<EvaluationHash>(
       (acc, c) => {
-        const isOwnPiece = c.piece.startsWith(player)
-        if (isOwnPiece) {
-          acc.ownPieces.push(c)
+        const isWhitePiece = c.piece.startsWith('w')
+        if (isWhitePiece) {
+          acc.whitePieces.push(c)
           if (c.piece[1] === 'k') {
-            acc.ownKing = c
+            acc.whiteKing = c
           }
         } else {
-          acc.opponentPieces.push(c)
+          acc.blackPieces.push(c)
           if (c.piece[1] === 'k') {
-            acc.opponentKing = c
+            acc.blackKing = c
           }
         }
         return acc
       },
-      { ownPieces: [], opponentPieces: [] } as EvaluationHash
+      { whitePieces: [], blackPieces: [] } as EvaluationHash
     )
 
-  const ownWeight = ownPieces.reduce(
+  const whiteWeight = whitePieces.reduce(
     (acc, c) => (acc += WEIGHTS[c.piece[1] as keyof typeof WEIGHTS]),
     0
   )
 
-  const opponentWeight = opponentPieces.reduce(
+  const blackWeight = blackPieces.reduce(
     (acc, c) => (acc += WEIGHTS[c.piece[1] as keyof typeof WEIGHTS]),
     0
   )
 
-  const isOwnKingCheckMated = !ownKing
+  const isWhiteKingCheckMated = !whiteKing
     ? false
     : getIsKingCheckMated({
-        king: ownKing,
-        ownPieces,
-        opponentPieces,
+        king: whiteKing,
+        ownPieces: whitePieces,
+        opponentPieces: blackPieces,
         position,
         type: 'checkmate'
       })
 
-  const isOpponentKingCheckMated = !opponentKing
+  const isOpponentKingCheckMated = !blackKing
     ? false
     : getIsKingCheckMated({
-        king: opponentKing,
-        ownPieces: opponentPieces,
-        opponentPieces: ownPieces,
+        king: blackKing,
+        ownPieces: blackPieces,
+        opponentPieces: whitePieces,
         position,
         type: 'checkmate'
       })
 
   const finalWeight =
-    ownWeight -
-    opponentWeight +
+    whiteWeight -
+    blackWeight +
     (isOpponentKingCheckMated ? Infinity : 0) -
-    (isOwnKingCheckMated ? Infinity : 0)
+    (isWhiteKingCheckMated ? Infinity : 0)
 
   return finalWeight
 }

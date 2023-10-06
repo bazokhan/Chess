@@ -7,8 +7,9 @@ import { parseFenPosition } from 'utils/parseFenPosition'
 //   promotion: '8/3P4/3K4/8/8/8/8/7R',
 //   mateIn2: '4r1k1/5ppp/r1p5/p1n1RP2/8/2P2N1P/2P3P1/3R2K1 b - - 0 21'
 //   castling: '8/8/8/8/8/8/8/4K2R w'
+//   only2horses: '8/8/3n4/8/8/3N4/8/8 b'
 // }
-const position = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w'
+const position = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'
 export const initPosition = parseFenPosition(position)
 export const initialTurn = (position.split(' ')[1] ?? 'w') as TPlayer
 // const initPosition = initialPosition
