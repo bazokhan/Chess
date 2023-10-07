@@ -12,7 +12,7 @@
 // import wp from 'assets/chess_pieces/wp.png'
 
 import { CSSProperties, FC } from 'react'
-import { TCell } from 'types/Cell'
+import { TCell } from 'types/Chess'
 import {
   FaChessBishop,
   FaChessKing,

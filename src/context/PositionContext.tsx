@@ -1,4 +1,4 @@
-import { ANIMATION_DURATION } from 'constants/pieces'
+import { ANIMATION_DURATION } from 'controller/chess/constants'
 import {
   FC,
   PropsWithChildren,
@@ -7,21 +7,21 @@ import {
   useMemo,
   useState
 } from 'react'
-import { TCell, TCoordinate, TPosition, TPromotion } from 'types/Cell'
-import { AnimationRecord, HistoryItem } from 'types/History'
+import { TCell, TCoordinate, TPosition, TPromotion } from 'types/Chess'
+import { AnimationRecord, HistoryItem } from 'types/Chess'
 // import { encodePgn } from 'utils/encodePgn'
 import { useTurnContext } from './TurnContext'
-import { hash, makeMove, parseFenMove } from 'utils/position'
+import { hash, makeMove, parseFenMove } from 'controller/chess/position'
 import {
   getIsBlackKingCheckMated,
   getIsKingChecked,
   getIsWhiteKingCheckMated
-} from 'utils/getChecks'
-import { encodeFenPosition } from 'utils/parseFenPosition'
+} from 'controller/chess/checks'
+import { encodeFenPosition } from 'controller/chess/fen'
 import { initialPosition } from 'data/normalInitialPosition'
-import { isWhite } from 'utils/pieces'
+import { isWhite } from 'controller/chess/isWhite'
 import { initPosition } from 'data/initPosition'
-import { TSquare } from 'types/Board'
+import { TSquare } from 'types/Chess'
 
 const PositionContext = createContext<{
   position: TCell[]

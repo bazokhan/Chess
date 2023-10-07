@@ -6,11 +6,11 @@ import {
   useMemo,
   useState
 } from 'react'
-import { TCell, TCoordinate } from 'types/Cell'
-import { getAvailableMoves } from 'utils/getAvailableMoves'
-import { getCoordinates } from 'utils/getCoordinates'
+import { TCell, TCoordinate } from 'types/Chess'
+import { getAvailableMoves } from 'controller/chess/moves'
+import { getCoordinates } from 'controller/chess/coordinates'
 import { usePositionContext } from './PositionContext'
-import { TSquare } from 'types/Board'
+import { TSquare } from 'types/Chess'
 
 const BoardContext = createContext<{
   activeCell: TCell | null

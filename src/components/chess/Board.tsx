@@ -3,7 +3,8 @@ import { FC, useEffect, useRef } from 'react'
 import { HighLight } from './Highlight'
 import { Piece } from './Piece'
 import { usePositionContext } from 'context/PositionContext'
-import { getCoordinates } from 'utils/getCoordinates'
+import { getCoordinates } from 'controller/chess/coordinates'
+import { getPosition } from 'controller/chess/getPosition.web'
 
 type BoardProps = {
   hideCoordinates?: boolean
@@ -11,20 +12,6 @@ type BoardProps = {
 
 const nums = [8, 7, 6, 5, 4, 3, 2, 1]
 const letters = 'abcdefgh'.split('')
-
-const getPosition = (_x: number, _y: number, board: HTMLDivElement | null) => {
-  const {
-    left = 0,
-    top = 0,
-    width = 0,
-    height = 0
-  } = board?.getBoundingClientRect() ?? {}
-  const cellWidth = Math.floor((width ?? 0) / 8)
-  const cellHeight = Math.floor((height ?? 0) / 8)
-  const x = cellWidth ? Math.floor((_x - left) / cellWidth) : 0
-  const y = cellHeight ? Math.floor((_y - top) / cellHeight) : 0
-  return { x, y }
-}
 
 export const Board: FC<BoardProps> = ({ hideCoordinates = false }) => {
   const boardRef = useRef<HTMLDivElement>(null)

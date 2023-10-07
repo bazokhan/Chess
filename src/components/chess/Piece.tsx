@@ -13,10 +13,10 @@ import wp from 'assets/chess_pieces/wp.png'
 
 import { FC, MouseEventHandler, useCallback, useMemo } from 'react'
 import { useBoardContext } from 'context/BoardContext'
-import { TCell } from 'types/Cell'
-import { getCoordinates } from 'utils/getCoordinates'
+import { TCell } from 'types/Chess'
+import { getCoordinates } from 'controller/chess/coordinates'
 import { usePositionContext } from 'context/PositionContext'
-import { ANIMATION_DURATION } from 'constants/pieces'
+import { ANIMATION_DURATION } from 'controller/chess/constants'
 
 const pieceImages = {
   br: br,

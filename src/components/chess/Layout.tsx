@@ -15,7 +15,7 @@ import {
   generateAllNextMoves,
   getPlayerEvaluation,
   printMoves
-} from 'utils/getPlayerEvaluation'
+} from 'controller/chess/evaluation'
 import { useDebugContext } from 'context/DebugContext'
 import EvalBar from './EvalBar'
 import { useDisclosure } from 'hooks/useDisclosure'
@@ -24,10 +24,10 @@ import { Paragraph } from '../ui/Paragraph'
 import { GameLayout } from 'components/layouts/GameLayout'
 import { Column } from '../layouts/Column'
 import { SimpleBoard } from './SimpleBoard'
-import { TSquare } from 'types/Board'
-import { TreeItem } from 'types/Cell'
+import { TSquare } from 'types/Chess'
+import { TreeItem } from 'types/Chess'
 import { MinimalBoard } from './MinimalBoard'
-import { getCoordinates } from 'utils/getCoordinates'
+import { getCoordinates } from 'controller/chess/coordinates'
 import { Diagram } from './Diagram'
 
 type Analysis = 'single_board' | 'board_tree' | 'tree_diagram' | 'none'

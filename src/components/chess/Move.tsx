@@ -1,6 +1,6 @@
 import { FC } from 'react'
-import { TreeItem } from 'types/Cell'
-import { getCoordinates } from 'utils/getCoordinates'
+import { TreeItem } from 'types/Chess'
+import { getCoordinates } from 'controller/chess/coordinates'
 import { SimplePiece } from './SimplePiece'
 
 type MoveProps = {

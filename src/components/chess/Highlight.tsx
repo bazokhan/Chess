@@ -1,5 +1,5 @@
 import { FC } from 'react'
-import { TCoordinate } from 'types/Cell'
+import { TCoordinate } from 'types/Chess'
 
 type Variant = 'mark' | 'availableMove' | 'availableCapture' | 'move' | 'check'
 

@@ -1,5 +1,5 @@
-import { TPlayer } from 'types/Player'
-import { parseFenPosition } from 'utils/parseFenPosition'
+import { TPlayer } from 'types/Chess'
+import { parseFenPosition } from 'controller/chess/fen'
 // const positions = {
 //   random: '8/3Pk3/2KN2r1/8/5n2/8/8/3R4 b - - 0 76',
 //   normal: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR',

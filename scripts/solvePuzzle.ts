@@ -1,6 +1,6 @@
 import { Chess } from '../src/classes/Chess'
 import { mateIn1Puzzles } from '../src/data/mateIn1Puzzles'
-import { TPlayer } from '../src/types/Player'
+import { TPlayer } from '../src/types/Chess'
 import { Model } from './types'
 
 mateIn1Puzzles.forEach((puzzle) => {

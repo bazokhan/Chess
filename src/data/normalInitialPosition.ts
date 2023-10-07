@@ -1,4 +1,4 @@
-import { TCell } from 'types/Cell'
+import { TCell } from 'types/Chess'
 
 export const initialPosition: TCell[] = [
   { square: 'a1', piece: 'wr' },

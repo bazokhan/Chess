@@ -1,18 +1,18 @@
 import { initialPosition } from 'data/normalInitialPosition'
-import { TCell, TCoordinate, TPosition } from 'types/Cell'
-import { HistoryItem } from 'types/History'
-import { calculateBestMoveV2 } from 'utils/engines/v2'
-import { fileLog } from 'utils/fileLog'
+import { TCell, TCoordinate, TPosition } from 'types/Chess'
+import { HistoryItem } from 'types/Chess'
+import { calculateBestMoveV2 } from 'controller/chess/calculateBestMoveV2'
+import { fileLog } from 'controller/shared/fileLog'
 import {
   getIsBlackKingCheckMated,
   getIsKingChecked,
   getIsWhiteKingCheckMated
-} from 'utils/getChecks'
-import { TPlayer } from 'types/Player'
-import { encodeFenPosition, parseFenPosition } from 'utils/parseFenPosition'
-import { isWhite } from 'utils/pieces'
-import { getNewPosition, hash, makeMove } from 'utils/position'
-import { TSquare } from 'types/Board'
+} from 'controller/chess/checks'
+import { TPlayer } from 'types/Chess'
+import { encodeFenPosition, parseFenPosition } from 'controller/chess/fen'
+import { isWhite } from 'controller/chess/isWhite'
+import { getNewPosition, hash, makeMove } from 'controller/chess/position'
+import { TSquare } from 'types/Chess'
 
 export class Chess {
   position: TCell[]

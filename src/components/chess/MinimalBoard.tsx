@@ -1,7 +1,7 @@
 import { FC } from 'react'
 import { HighLight } from './Highlight'
-import { TCell, TCoordinate } from 'types/Cell'
-import { getCoordinates } from 'utils/getCoordinates'
+import { TCell, TCoordinate } from 'types/Chess'
+import { getCoordinates } from 'controller/chess/coordinates'
 
 type MinimalBoardProps = {
   from?: TCoordinate

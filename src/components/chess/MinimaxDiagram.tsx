@@ -1,7 +1,7 @@
 import { FC } from 'react'
-import { TPiece, TSquare } from 'types/Board'
-import { TreeItem } from 'types/Cell'
-import { TPlayer } from 'types/Player'
+import { TPiece, TSquare } from 'types/Chess'
+import { TreeItem } from 'types/Chess'
+import { TPlayer } from 'types/Chess'
 
 type DiagramProps = {
   tree: TreeItem[]

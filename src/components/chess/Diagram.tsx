@@ -1,12 +1,12 @@
 import { useDisclosure } from 'hooks/useDisclosure'
 import { FC } from 'react'
-import { TPiece, TSquare } from 'types/Board'
-import { TCell, TreeItem } from 'types/Cell'
-import { TPlayer } from 'types/Player'
+import { TPiece, TSquare } from 'types/Chess'
+import { TCell, TreeItem } from 'types/Chess'
+import { TPlayer } from 'types/Chess'
 import {
   evaluatePosition,
   generatePositionsTree
-} from 'utils/getPlayerEvaluation'
+} from 'controller/chess/evaluation'
 
 type DiagramProps = {
   turn: TPlayer

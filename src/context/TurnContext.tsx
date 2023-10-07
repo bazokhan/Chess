@@ -6,7 +6,7 @@ import {
   useContext,
   useState
 } from 'react'
-import { TPlayer } from 'types/Player'
+import { TPlayer } from 'types/Chess'
 
 const TurnContext = createContext<{
   turn: TPlayer

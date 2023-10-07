@@ -1,8 +1,8 @@
 import { FC, useEffect, useRef, useState } from 'react'
 import { HighLight } from './Highlight'
 // import { usePositionContext } from 'context/PositionContext'
-import { TCell, TCoordinate, TreeItem } from 'types/Cell'
-import { getCoordinates } from 'utils/getCoordinates'
+import { TCell, TCoordinate, TreeItem } from 'types/Chess'
+import { getCoordinates } from 'controller/chess/coordinates'
 import { SimplePiece } from './SimplePiece'
 import { Move } from './Move'
 

@@ -12,12 +12,12 @@ import {
 } from 'react'
 import { useTurnContext } from './TurnContext'
 import { usePositionContext } from './PositionContext'
-import { TPlayer } from 'types/Player'
-import { calculateBestMoveV2 } from 'utils/engines/v2'
-import { fileLog } from 'utils/fileLog'
-import { generatePositionsTree } from 'utils/getPlayerEvaluation'
-import { TreeItem } from 'types/Cell'
-import { minimax } from 'utils/minimax'
+import { TPlayer } from 'types/Chess'
+import { calculateBestMoveV2 } from 'controller/chess/calculateBestMoveV2'
+import { fileLog } from 'controller/shared/fileLog'
+import { generatePositionsTree } from 'controller/chess/evaluation'
+import { TreeItem } from 'types/Chess'
+import { minimax } from 'controller/chess/minimax'
 
 const DebugContext = createContext<{
   setTurnToWhite: () => void
