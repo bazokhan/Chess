@@ -28,8 +28,9 @@ import { TSquare } from 'types/Board'
 import { TreeItem } from 'types/Cell'
 import { MinimalBoard } from './MinimalBoard'
 import { getCoordinates } from 'utils/getCoordinates'
+import { Diagram } from './Diagram'
 
-type Analysis = 'single_board' | 'board_tree' | 'tree_diagram'
+type Analysis = 'single_board' | 'board_tree' | 'tree_diagram' | 'none'
 
 export const Layout: FC<PropsWithChildren> = ({ children }) => {
   const {
@@ -82,6 +83,7 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
   )
   const filteredNext = Object.values(filtered)
   const [analysisMode, setAnalysisMode] = useState<Analysis>('single_board')
+
   return (
     <GameLayout>
       {isSnackbarOpen ? (
@@ -95,11 +97,19 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
         <div className="btn-group">
           <Switch
             className="w-full"
+            onClick={() => setAnalysisMode('none')}
+            disabled={analysisMode === 'none'}
+            active={analysisMode === 'none'}
+          >
+            None
+          </Switch>
+          <Switch
+            className="w-full"
             onClick={() => setAnalysisMode('single_board')}
             disabled={analysisMode === 'single_board'}
             active={analysisMode === 'single_board'}
           >
-            Single Board
+            Single
           </Switch>
           <Switch
             className="w-full"
@@ -107,7 +117,7 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
             disabled={analysisMode === 'board_tree'}
             active={analysisMode === 'board_tree'}
           >
-            Board Tree
+            Boards
           </Switch>
           <Switch
             className="w-full"
@@ -145,33 +155,13 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
           </div>
         ) : null}
         {analysisMode === 'tree_diagram' ? (
-          <div className="flex w-full max-w-full flex-col items-center justify-start overflow-auto">
-            <p
-              className={`flex h-[48px] w-[48px] items-center justify-center rounded-full border-2 ${
-                turn === 'w' ? 'border-white' : 'border-black'
-              } p-2 font-black text-red-500`}
-            >
-              {evaluatePosition(position)}
-            </p>
-            <div className="flex flex-wrap items-start justify-center">
-              {tree.map((branch) =>
-                branch.position ? (
-                  <div
-                    key={branch.move}
-                    className={`flex h-[48px] w-[48px] flex-col items-center justify-center rounded-full border-2 ${
-                      turn === 'b' ? 'border-white' : 'border-black'
-                    } p-2 font-black text-red-500`}
-                  >
-                    <p className="text-xs font-normal">
-                      {branch.piece.piece}
-                      {branch.move}
-                    </p>
-                    <p>{evaluatePosition(branch.position)}</p>
-                  </div>
-                ) : null
-              )}
-            </div>
-          </div>
+          <Diagram
+            position={position}
+            turn={turn}
+            depth={3}
+            calculateFor="w"
+            bestScore={-Infinity}
+          />
         ) : null}
         <p className="title">Evaluation bar</p>
         <Switch active={isSnackbarOpen} onClick={onSnackbarToggle}>
