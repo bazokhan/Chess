@@ -29,7 +29,10 @@ type EvaluationHash = {
   whiteKing?: TCell
   blackKing?: TCell
 }
+
+// let i = 0
 export const evaluatePosition = (position: TCell[]) => {
+  // const start = Date.now()
   const { whitePieces, blackPieces, whiteKing, blackKing } =
     position.reduce<EvaluationHash>(
       (acc, c) => {
@@ -86,6 +89,9 @@ export const evaluatePosition = (position: TCell[]) => {
     (isOpponentKingCheckMated ? Infinity : 0) -
     (isWhiteKingCheckMated ? Infinity : 0)
 
+  // const end = Date.now()
+  // console.log(++i, end - start)
+
   return finalWeight
 }
 
@@ -126,16 +132,17 @@ export const generatePositionsTree = (
   turn: TPlayer,
   position: TCell[],
   depth: number,
-  log = false
+  log = false,
+  withEvaluation = false
 ): TreeItem[] => {
   if (!depth) return []
-  const start = Date.now()
   const nextMoves = generateAllNextMoves(turn, position)
-  const result = nextMoves
+  const start = Date.now()
+  let result = nextMoves
     .map(({ piece, moves }) => {
-      const result = moves.map((move) => {
+      return moves.map((move) => {
         const { newPosition } = makeMove(piece, move, position)
-        const res = {
+        return {
           piece,
           move,
           turn,
@@ -144,17 +151,22 @@ export const generatePositionsTree = (
             turn === 'b' ? 'w' : 'b',
             newPosition,
             depth - 1,
-            false
+            false,
+            withEvaluation
           )
         }
-
-        return res
       })
-
-      return result
     })
     .flat()
   const end = Date.now()
+  // console.log('===============', result?.length)
+  // i = 0
+  if (withEvaluation) {
+    result = result.map((b) => ({
+      ...b,
+      evaluation: evaluatePosition(b.position)
+    }))
+  }
 
   if (log) {
     fileLog(
@@ -162,5 +174,5 @@ export const generatePositionsTree = (
       `generation took ${end - start} ms and yielded ${result.length} positions`
     )
   }
-  return result
+  return result as TreeItem[]
 }

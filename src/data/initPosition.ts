@@ -9,7 +9,7 @@ import { parseFenPosition } from 'utils/parseFenPosition'
 //   castling: '8/8/8/8/8/8/8/4K2R w'
 //   only2horses: '8/8/3n4/8/8/3N4/8/8 b'
 // }
-const position = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'
+const position = '8/8/8/8/6pN/7p/7p/1KR3nk w --0 1'
 export const initPosition = parseFenPosition(position)
 export const initialTurn = (position.split(' ')[1] ?? 'w') as TPlayer
 // const initPosition = initialPosition

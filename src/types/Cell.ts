@@ -21,6 +21,7 @@ export type TreeItem = {
   turn: TPlayer
   next?: TreeItem[]
   position?: TCell[]
+  evaluation: number
 }
 
 export type TPosition = Record<TSquare, TCell>
