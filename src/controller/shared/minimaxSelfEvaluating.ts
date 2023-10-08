@@ -2,6 +2,7 @@ import { TPlayer } from 'types/Chess'
 import { TreeSelfEvaluating } from 'types/Shared'
 
 export let checked = 0
+const checkMateIn1 = true
 
 export const minimaxSelfEvaluating = <T, S>(
   turn: TPlayer,
@@ -11,14 +12,14 @@ export const minimaxSelfEvaluating = <T, S>(
   position: S,
   evaluationFn: (position: S) => number,
   alpha: number,
-  beta: number
-): {
-  [x: string]: number | TreeSelfEvaluating<T, S>[keyof T]
+  beta: number,
+  prune: boolean = true
+): T & {
   evaluation: number
 } => {
   checked += 1
   if (!tree.next?.length) {
-    return { [idProp]: tree[idProp], evaluation: evaluationFn(position) }
+    return { ...tree, evaluation: evaluationFn(position) }
   }
   if (turn === 'w') {
     const next = []
@@ -32,20 +33,28 @@ export const minimaxSelfEvaluating = <T, S>(
         branch.position,
         evaluationFn,
         alpha,
-        beta
+        beta,
+        prune
       )
       const v = nextMinMax.evaluation
       next.push({ ...branch, ...nextMinMax })
-      if (v > beta) {
+      if (checkMateIn1 && index === 0 && (v === -Infinity || v === Infinity)) {
+        return {
+          ...branch,
+          evaluation: v
+        }
+      }
+      if (prune && v > beta) {
         break
-      } else {
-        beta = v
+      }
+      if (prune && v > alpha) {
+        alpha = v
       }
     }
     const most = next.sort((a, b) => b.evaluation - a.evaluation)[0]
-    const nextStepId = index >= 1 ? tree[idProp] : most[idProp] // ignore current step, we want best next step
+    const nextStep = index >= 1 ? tree : most // ignore current step, we want best next step
     return {
-      [idProp]: nextStepId,
+      ...nextStep,
       evaluation: most?.evaluation
     }
   } else {
@@ -64,16 +73,23 @@ export const minimaxSelfEvaluating = <T, S>(
       )
       const v = nextMinMax.evaluation
       next.push({ ...branch, ...nextMinMax })
-      if (v < alpha) {
+      if (checkMateIn1 && index === 0 && (v === -Infinity || v === Infinity)) {
+        return {
+          ...branch,
+          evaluation: v
+        }
+      }
+      if (prune && v < alpha) {
         break
-      } else {
-        alpha = v
+      }
+      if (prune && v < beta) {
+        beta = v
       }
     }
     const least = next.sort((a, b) => a.evaluation - b.evaluation)[0]
-    const nextStepId = index >= 1 ? tree[idProp] : least[idProp] // ignore current step, we want best next step
+    const nextStep = index >= 1 ? tree : least // ignore current step, we want best next step
     return {
-      [idProp]: nextStepId,
+      ...nextStep,
       evaluation: least?.evaluation
     }
   }

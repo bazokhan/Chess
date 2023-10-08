@@ -8,7 +8,7 @@ import {
   checked,
   minimaxSelfEvaluating
 } from 'controller/shared/minimaxSelfEvaluating'
-import { FC, PropsWithChildren, useState } from 'react'
+import { FC, PropsWithChildren, useEffect, useRef, useState } from 'react'
 import { Analysis, TCell, TreeItem } from 'types/Chess'
 import {
   evaluatePosition,
@@ -20,14 +20,29 @@ import { getCoordinates } from 'controller/chess/coordinates'
 import { MinimaxDiagram } from './MinimaxDiagram'
 
 export const compare = false
+const makeFirstMove = true
+const DEPTH = 3
 
 export const MinimaxChess: FC<PropsWithChildren> = ({ children }) => {
-  const { position } = usePositionContext()
-
+  const { position, movePieceToCoordinate } = usePositionContext()
   const { turn } = useTurnContext()
-  const tree = generatePositionsTree(turn, position, 2)
+
+  const moved = useRef(false)
+  useEffect(() => {
+    if (!makeFirstMove) return
+    if (moved.current) return
+    const myPiece = position.find((p) => p.piece === 'br' && p.square === 'e8')
+    if (myPiece) {
+      movePieceToCoordinate({ cell: myPiece, coordinate: 'e5' })
+      moved.current = true
+    }
+  }, [movePieceToCoordinate, position])
+
+  const tree = generatePositionsTree(turn, position, DEPTH)
   const evaluation = evaluatePosition(position)
+
   const start = Date.now()
+
   const best = minimaxSelfEvaluating<Partial<TreeItem>, TCell[]>(
     turn,
     {
@@ -39,13 +54,14 @@ export const MinimaxChess: FC<PropsWithChildren> = ({ children }) => {
     position,
     evaluatePosition,
     -Infinity,
-    Infinity
+    Infinity,
+    true
   )
   console.log(Date.now() - start)
   console.log({ checked })
 
   const tree2 = compare
-    ? generatePositionsTree(turn, position, 2, false, true)
+    ? generatePositionsTree(turn, position, DEPTH, false, true)
     : null
   const best2 =
     compare && tree2
@@ -132,12 +148,17 @@ export const MinimaxChess: FC<PropsWithChildren> = ({ children }) => {
           </div>
         ) : null}
         {analysisMode === 'tree_diagram' ? (
-          <>
+          <div
+            className={`grid w-full ${
+              compare ? 'grid-cols-2' : 'grid-cols-1'
+            } gap-2`}
+          >
             <MinimaxDiagram
               turn={turn}
               tree={tree}
               evaluation={evaluation}
               best={best}
+              max={0}
             />
             {compare && tree2 && best2 ? (
               <MinimaxDiagram
@@ -145,9 +166,10 @@ export const MinimaxChess: FC<PropsWithChildren> = ({ children }) => {
                 tree={tree2}
                 evaluation={evaluation}
                 best={best2}
+                max={0}
               />
             ) : null}
-          </>
+          </div>
         ) : null}
       </Column>
     </GameLayout>

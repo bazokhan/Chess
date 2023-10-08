@@ -22,6 +22,7 @@ import { initialPosition } from 'data/normalInitialPosition'
 import { isWhite } from 'controller/chess/isWhite'
 import { initPosition } from 'data/initPosition'
 import { TSquare } from 'types/Chess'
+import { encodePgn } from 'controller/chess/pgn'
 
 const PositionContext = createContext<{
   position: TCell[]
@@ -82,13 +83,17 @@ const PositionContext = createContext<{
 export const usePositionContext = () => useContext(PositionContext)
 export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
   const [position, setPosition] = useState<TCell[]>(initPosition)
-  const [history] = useState<HistoryItem[]>([])
+  const [history, setHistory] = useState<HistoryItem[]>([])
   const [future] = useState<HistoryItem[]>([])
-  const [pgn] = useState<string[]>([])
+  const [pgn, setPgn] = useState<string[]>([])
   const [animate, setAnimate] = useState<AnimationRecord>({})
   const [promotionType, setPromotionType] = useState<TPromotion>('Q')
 
-  const resetPosition = () => setPosition(initPosition)
+  const resetPosition = () => {
+    setPosition(initPosition)
+    setHistory([])
+    setPgn([])
+  }
 
   const { turn, toggleTurn } = useTurnContext()
   const tween = async (
@@ -141,12 +146,14 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
 
     // Castle
     const castlingPositions = { wk: ['c1', 'g1'], bk: ['c8', 'g8'] }
+    const kingPositions = { wk: 'e1', bk: 'e8' }
     const rooks = { c1: 'a1', g1: 'h1', c8: 'a8', g8: 'h8' }
     const rookDestination = { a1: 'd1', h1: 'f1', a8: 'd8', h8: 'f8' }
     if (
       castlingPositions[cell.piece as keyof typeof castlingPositions]?.includes(
         coordinate
-      )
+      ) &&
+      kingPositions[cell.piece as keyof typeof kingPositions] === cell.square
     ) {
       const rook = rooks[coordinate as keyof typeof rooks] as TSquare
       const newRookPlace = rookDestination[rook as keyof typeof rookDestination]
@@ -172,10 +179,23 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
       return { success: true, position: newPosition }
     } else {
       const { move, newPosition } = makeMove(cell, coordinate, position)
-      // if (!skipHistory) {
-      //   setHistory([...history, { coordinates: parseFenMove(move) }])
-      //   setPgn(encodePgn(pgn, { coordinates: parseFenMove(move) }))
-      // }
+      if (!skipHistory) {
+        setHistory([
+          ...history,
+          {
+            coordinates: parseFenMove(move),
+            oldCell: cell,
+            newCell: { ...cell, square: move.slice(2) as TSquare }
+          }
+        ])
+        setPgn(
+          encodePgn(pgn, {
+            coordinates: parseFenMove(move),
+            oldCell: cell,
+            newCell: { ...cell, square: move.slice(2) as TSquare }
+          })
+        )
+      }
       if (!skipAnimation) {
         await tween([[cell, parseFenMove(move)]])
       }

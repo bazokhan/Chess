@@ -114,7 +114,14 @@ export const printMoves = (
 }
 
 export const generateAllNextMoves = (player: TPlayer, position: TCell[]) => {
-  const ownPieces = position.filter((c) => c.piece.startsWith(player))
+  const ownPieces = position
+    .filter((c) => c.piece.startsWith(player))
+    .sort((a, b) =>
+      // SORTING: prioritize pieces that are in the opponent field (aggressive???)
+      player === 'w'
+        ? Number(b.square[1]) - Number(a.square[1])
+        : Number(a.square[1]) - Number(b.square[1])
+    )
   const availableMoves = ownPieces
     .map((piece) => {
       const moves = getAvailableMoves(piece, position)

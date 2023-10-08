@@ -18,7 +18,6 @@ export const calculateBestMoveV2 = ({
 }): TreeItem | null => {
   const before = Date.now()
   const tree = generatePositionsTree(turn, position, depth)
-  console.log(turn)
   let originalDepth = 1
   let best = tree
     .map((branch, index) => ({

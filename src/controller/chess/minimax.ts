@@ -20,17 +20,8 @@ export const minimax = ({
   version: number
 }) => {
   const children = tree.next ?? []
-  const move = `${tree.piece.square}${tree.move}`
-  // console.log(
-  //   `Calculating depth ${depth} for player ${player} on branch #${index}`
-  // )
   if (depth <= 0 || !children.length) {
     const evaluation = evaluatePosition(tree?.position as TCell[])
-    if (index === 18) {
-      console.log(
-        `>>>>>>>>>>>> [Player ${player} - Branch ${index}]: ${move} Evaluation ${evaluation} Alpha ${alpha} Beta ${beta}`
-      )
-    }
     const res = player === 'w' ? evaluation : -evaluation
     return res
   }
@@ -55,11 +46,6 @@ export const minimax = ({
       beta = Math.min(beta, nextEval)
     }
 
-    if (index === 18) {
-      console.log(
-        `[Player ${player} - Branch ${index} - Depth ${depth}]: ${move} - NextEval ${nextEval} MaxEval ${maxEval} MinEval ${minEval} Alpha ${alpha} Beta ${beta}`
-      )
-    }
     if (beta <= alpha) {
       break
     }
