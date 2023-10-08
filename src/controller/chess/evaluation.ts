@@ -5,6 +5,7 @@ import { fileLog } from '../shared/fileLog'
 import { TPlayer } from 'types/Chess'
 import { getIsKingCheckMated } from './checks'
 import { TSquare } from 'types/Chess'
+import proximityTable from '../../../data_sets/proximityTable.json'
 
 const WEIGHTS = {
   r: 500,
@@ -113,20 +114,45 @@ export const printMoves = (
   )
 }
 
+export const sortByProximity = (
+  square1: TSquare,
+  square2: TSquare,
+  targetSquare: TSquare
+) => {
+  const dist1 =
+    Math.abs(targetSquare.charCodeAt(0) - square1.charCodeAt(0)) +
+    Math.abs(targetSquare.charCodeAt(1) - square1.charCodeAt(1))
+  const dist2 =
+    Math.abs(targetSquare.charCodeAt(0) - square2.charCodeAt(0)) +
+    Math.abs(targetSquare.charCodeAt(1) - square2.charCodeAt(1))
+  return dist1 - dist2
+}
+
 export const generateAllNextMoves = (player: TPlayer, position: TCell[]) => {
-  const ownPieces = position
-    .filter((c) => c.piece.startsWith(player))
-    .sort((a, b) =>
-      // SORTING: prioritize pieces that are in the opponent field (aggressive???)
-      player === 'w'
-        ? Number(b.square[1]) - Number(a.square[1])
-        : Number(a.square[1]) - Number(b.square[1])
-    )
-  const availableMoves = ownPieces
+  const kingSquare = position.find((c) => c.piece === `${player}k`)?.square
+  const ownPieces = position.filter((c) => c.piece.startsWith(player))
+  const sortedOwnPieces = ownPieces
+  // .sort((a, b) =>
+  //   // SORTING: prioritize pieces that are in the opponent field (aggressive???)
+  //   player === 'w'
+  //     ? Number(b.square[1]) - Number(a.square[1])
+  //     : Number(a.square[1]) - Number(b.square[1])
+  // )
+
+  const availableMoves = sortedOwnPieces
     .map((piece) => {
       const moves = getAvailableMoves(piece, position)
       if (!moves.length) return undefined
-      return { piece, moves }
+      return {
+        piece,
+        // SORTING: prioritize pieces nearer to opponent king
+        moves: kingSquare
+          ? moves.sort((a, b) => {
+              const id = `${kingSquare}${a}${b}`
+              return proximityTable[id as keyof typeof proximityTable]
+            })
+          : moves
+      }
     })
     .filter(Boolean)
   return availableMoves as {
