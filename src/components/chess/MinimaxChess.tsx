@@ -20,7 +20,7 @@ import { getCoordinates } from 'controller/chess/coordinates'
 import { MinimaxDiagram } from './MinimaxDiagram'
 
 export const compare = false
-const makeFirstMove = true
+const makeFirstMove = false
 const DEPTH = 3
 
 export const MinimaxChess: FC<PropsWithChildren> = ({ children }) => {

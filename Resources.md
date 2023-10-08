@@ -2,3 +2,5 @@
 [Youtube - Coding Adventure: Making a Better Chess Bot](https://www.youtube.com/watch?v=_vqlIPDR2TU)
 [Youtube - Coding Adventure: Chess](https://www.youtube.com/watch?v=U4ogK0MIzqk&t=3s)
 [StockFishServer](https://github.com/hyugit/stockfish-server)
+[Test Positions](https://www.chessprogramming.org/Test-Positions)
+[Youtube - Chess Programming](https://www.youtube.com/watch?v=rrLZVaQood0&pp=ygUmcmVwcmVzZXRpbmcgY2hlc3MgYm9hcmQgaW4gcHJvZ3JhbW1pbmc%3D)
