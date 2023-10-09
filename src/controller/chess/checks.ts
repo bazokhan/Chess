@@ -1,8 +1,26 @@
-import { TCell, TPosition } from 'types/Chess'
+import { TCell, TPiece, TPosition } from 'types/Chess'
 import { isWhite } from './isWhite'
-import { getAvailableMoves, getAvailableMovesWithoutFiltering } from './moves'
+import {
+  getAvailableMoves,
+  getAvailableMovesWithoutFiltering,
+  getMoves
+} from './moves'
 import { TPlayer } from 'types/Chess'
 import { hash } from './position'
+
+export const getCheck = ({
+  turn,
+  position
+}: {
+  turn: TPlayer
+  position: TPosition
+}) => {
+  const allAvailableMovesForPieces = getMoves(turn, position)
+  const opponentKing = Object.values(position).find(
+    ({ piece }) => piece === (`${turn === 'w' ? 'b' : 'w'}k` as TPiece)
+  )?.square
+  return !!allAvailableMovesForPieces.find((m) => m.slice(4) === opponentKing)
+}
 
 export const getIsKingChecked = ({
   pieces,
@@ -38,6 +56,33 @@ export const getIsBlackKingChecked = ({ position }: { position: TCell[] }) => {
 }
 
 type TCheckType = 'checkmate' | 'stalemate'
+
+export const getCheckMate = ({
+  turn,
+  position,
+  king,
+  type = 'checkmate'
+}: {
+  turn: TPlayer
+  position: TCell[]
+  ownPieces: TCell[]
+  king?: TCell
+  type?: TCheckType
+}) => {
+  const allAvailableMovesForOpponent = getMoves(
+    turn === 'w' ? 'b' : 'w',
+    hash(position)
+  )
+  const allAvailableMovesForPlayer = getMoves(turn, hash(position), true)
+  const isPlayerKingChecked = !!allAvailableMovesForOpponent.find(
+    (m) => m === king?.square
+  )
+
+  return (
+    (type === 'checkmate' ? isPlayerKingChecked : !isPlayerKingChecked) &&
+    !allAvailableMovesForPlayer.length
+  )
+}
 
 export const getIsKingCheckMated = ({
   position,

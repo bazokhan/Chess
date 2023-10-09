@@ -32,6 +32,7 @@ import { Diagram } from './Diagram'
 
 type Analysis = 'single_board' | 'board_tree' | 'tree_diagram' | 'none'
 
+const filterAnalysis = false
 export const Layout: FC<PropsWithChildren> = ({ children }) => {
   const {
     moveBackInHistory,
@@ -69,19 +70,25 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
     ...p,
     evaluation: evaluatePosition(p.position ?? [])
   }))
-  const filtered = next?.reduce(
-    (acc, current) => {
-      const prevEval =
-        acc[current.move]?.evaluation ?? (turn === 'w' ? -Infinity : Infinity)
-      const currentEval = current.evaluation
-      const higherEval = prevEval > currentEval ? acc[current.move] : current
-      const lowerEval = prevEval < currentEval ? acc[current.move] : current
-      acc[current.move] = turn === 'w' ? higherEval : lowerEval
-      return acc
-    },
-    {} as Record<TSquare, TreeItem & { evaluation?: number }>
-  )
-  const filteredNext = Object.values(filtered)
+  const filteredNext = !filterAnalysis
+    ? next
+    : Object.values(
+        next?.reduce(
+          (acc, current) => {
+            const prevEval =
+              acc[current.move]?.evaluation ??
+              (turn === 'w' ? -Infinity : Infinity)
+            const currentEval = current.evaluation
+            const higherEval =
+              prevEval > currentEval ? acc[current.move] : current
+            const lowerEval =
+              prevEval < currentEval ? acc[current.move] : current
+            acc[current.move] = turn === 'w' ? higherEval : lowerEval
+            return acc
+          },
+          {} as Record<TSquare, TreeItem & { evaluation?: number }>
+        )
+      )
   const [analysisMode, setAnalysisMode] = useState<Analysis>('single_board')
 
   const { isOpen, onToggle } = useDisclosure(true)

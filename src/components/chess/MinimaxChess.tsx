@@ -21,7 +21,7 @@ import { MinimaxDiagram } from './MinimaxDiagram'
 
 export const compare = false
 const makeFirstMove = false
-const DEPTH = 3
+const DEPTH = 1
 
 export const MinimaxChess: FC<PropsWithChildren> = ({ children }) => {
   const { position, movePieceToCoordinate } = usePositionContext()

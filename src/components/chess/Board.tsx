@@ -1,10 +1,11 @@
 import { useBoardContext } from 'context/BoardContext'
-import { FC, useEffect, useRef } from 'react'
+import { FC, useEffect, useMemo, useRef } from 'react'
 import { HighLight } from './Highlight'
 import { Piece } from './Piece'
 import { usePositionContext } from 'context/PositionContext'
 import { getCoordinates } from 'controller/chess/coordinates'
 import { getPosition } from 'controller/chess/getPosition.web'
+import { TSquare } from 'types/Chess'
 
 type BoardProps = {
   hideCoordinates?: boolean
@@ -31,8 +32,25 @@ export const Board: FC<BoardProps> = ({ hideCoordinates = false }) => {
     movePieceToCoordinate,
     history,
     isBlackKingInCheck,
-    isWhiteKingInCheck
+    isWhiteKingInCheck,
+    whiteMoves,
+    blackMoves
   } = usePositionContext()
+
+  const moves = useMemo(
+    () =>
+      !activeCell
+        ? []
+        : [...whiteMoves, ...blackMoves]
+            .filter(
+              (m) =>
+                activeCell.piece === m.slice(0, 2) &&
+                activeCell.square === m.slice(2, 4)
+            )
+            .map((m) => m.slice(4) as TSquare)
+            .map(getCoordinates),
+    [activeCell, blackMoves, whiteMoves]
+  )
 
   const blackKing = position.find((p) => p.piece === 'bk')
   const whiteKing = position.find((p) => p.piece === 'wk')
@@ -118,6 +136,19 @@ export const Board: FC<BoardProps> = ({ hideCoordinates = false }) => {
               ? 'availableCapture'
               : 'availableMove'
           }
+        />
+      ))}
+      {moves?.map((m) => (
+        <HighLight
+          key={`${m.x}-${m.y}`}
+          x={m.x}
+          y={m.y}
+          // variant={
+          //   position.find((cell) => cell.square === getSquare(m))
+          //     ? 'availableCapture'
+          //     : 'availableMove'
+          // }
+          variant="newMove"
         />
       ))}
       {history

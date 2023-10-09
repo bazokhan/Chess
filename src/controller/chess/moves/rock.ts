@@ -21,7 +21,6 @@ export const getRockAvailableMoves = ({
       const newX = x + delta * xDirection
       const newY = y + delta * yDirection
       if (newX < 0 || newX > 7 || newY < 0 || newY > 7) continue
-
       const square = (String.fromCharCode(
         piece.square.charCodeAt(0) + delta * xDirection
       ) +

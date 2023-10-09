@@ -23,6 +23,7 @@ import { isWhite } from 'controller/chess/isWhite'
 import { initPosition } from 'data/initPosition'
 import { TSquare } from 'types/Chess'
 import { encodePgn } from 'controller/chess/pgn'
+import { getMoves } from 'controller/chess/moves'
 
 const PositionContext = createContext<{
   position: TCell[]
@@ -57,6 +58,8 @@ const PositionContext = createContext<{
   hPosition: TPosition
   resetPosition: () => void
   fen: string
+  whiteMoves: string[]
+  blackMoves: string[]
 }>({
   position: initialPosition,
   movePieceToCoordinate: () => {},
@@ -77,7 +80,9 @@ const PositionContext = createContext<{
   promotionType: 'Q',
   hPosition: {} as TPosition,
   resetPosition: () => {},
-  fen: encodeFenPosition(initialPosition, 'w')
+  fen: encodeFenPosition(initialPosition, 'w'),
+  whiteMoves: [],
+  blackMoves: []
 })
 
 export const usePositionContext = () => useContext(PositionContext)
@@ -288,6 +293,9 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
 
   const fen = encodeFenPosition(position, turn)
 
+  const whiteMoves = useMemo(() => getMoves('w', hPosition, true), [hPosition])
+  const blackMoves = useMemo(() => getMoves('b', hPosition, true), [hPosition])
+
   return (
     <PositionContext.Provider
       value={{
@@ -310,7 +318,9 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
         setPromotionType,
         hPosition,
         resetPosition,
-        fen
+        fen,
+        whiteMoves,
+        blackMoves
       }}
     >
       {children}
