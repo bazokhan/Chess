@@ -12,6 +12,7 @@ import { FC, PropsWithChildren, useEffect, useRef, useState } from 'react'
 import { Analysis, TCell, TreeItem } from 'types/Chess'
 import {
   evaluatePosition,
+  fasterEvaluatePosition,
   generatePositionsTree
 } from 'controller/chess/evaluation'
 import { SimpleBoard } from './SimpleBoard'
@@ -21,7 +22,7 @@ import { MinimaxDiagram } from './MinimaxDiagram'
 
 export const compare = false
 const makeFirstMove = false
-const DEPTH = 1
+const DEPTH = 3
 
 export const MinimaxChess: FC<PropsWithChildren> = ({ children }) => {
   const { position, movePieceToCoordinate } = usePositionContext()
@@ -39,7 +40,8 @@ export const MinimaxChess: FC<PropsWithChildren> = ({ children }) => {
   }, [movePieceToCoordinate, position])
 
   const tree = generatePositionsTree(turn, position, DEPTH)
-  const evaluation = evaluatePosition(position)
+  const evaluation = fasterEvaluatePosition(position)
+  // const evaluation = evaluatePosition(position)
 
   const start = Date.now()
 
@@ -52,7 +54,8 @@ export const MinimaxChess: FC<PropsWithChildren> = ({ children }) => {
     'move',
     0,
     position,
-    evaluatePosition,
+    fasterEvaluatePosition,
+    // evaluatePosition,
     -Infinity,
     Infinity,
     true

@@ -3,7 +3,7 @@ import { getAvailableMoves } from './moves'
 import { makeMove } from './position'
 import { fileLog } from '../shared/fileLog'
 import { TPlayer } from 'types/Chess'
-import { getIsKingCheckMated } from './checks'
+import { getCheckMate, getIsKingCheckMated } from './checks'
 import { TSquare } from 'types/Chess'
 import proximityTable from '../../../data_sets/proximityTable.json'
 
@@ -16,12 +16,44 @@ const WEIGHTS = {
   p: 100
 }
 
+const FASTER_WEIGHTS = {
+  wr: 500,
+  wn: 300,
+  wb: 320,
+  wq: 900,
+  wk: 0,
+  wp: 100,
+  br: -500,
+  bn: -300,
+  bb: -320,
+  bq: -900,
+  bk: -0,
+  bp: -100
+}
+
 export const getPlayerEvaluation = (player: TPlayer, position: TCell[]) => {
   const ownPieces = position.filter((c) => c.piece.startsWith(player))
   return ownPieces.reduce(
     (acc, c) => (acc += WEIGHTS[c.piece[1] as keyof typeof WEIGHTS]),
     0
   )
+}
+
+export const fasterEvaluatePosition = (position: TCell[]) => {
+  const piecesWeight = position.reduce(
+    (acc, c) => (acc += FASTER_WEIGHTS[c.piece as keyof typeof FASTER_WEIGHTS]),
+    0
+  )
+
+  const isWhiteKingCheckMated = getCheckMate({ turn: 'w', position })
+  const isBlackKingCheckMated = getCheckMate({ turn: 'b', position })
+
+  const finalWeight =
+    piecesWeight +
+    (isBlackKingCheckMated ? Infinity : 0) -
+    (isWhiteKingCheckMated ? Infinity : 0)
+
+  return finalWeight
 }
 
 type EvaluationHash = {

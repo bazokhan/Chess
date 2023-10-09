@@ -58,21 +58,19 @@ export const getIsBlackKingChecked = ({ position }: { position: TCell[] }) => {
 type TCheckType = 'checkmate' | 'stalemate'
 
 export const getCheckMate = ({
-  turn,
+  turn, // The player getting checkmated
   position,
-  king,
   type = 'checkmate'
 }: {
   turn: TPlayer
   position: TCell[]
-  ownPieces: TCell[]
-  king?: TCell
   type?: TCheckType
 }) => {
   const allAvailableMovesForOpponent = getMoves(
     turn === 'w' ? 'b' : 'w',
     hash(position)
   )
+  const king = position.find((c) => c.piece === (`${turn}k` as TPiece))
   const allAvailableMovesForPlayer = getMoves(turn, hash(position), true)
   const isPlayerKingChecked = !!allAvailableMovesForOpponent.find(
     (m) => m === king?.square
