@@ -7,7 +7,24 @@ import { getKnightAvailableMoves } from './knight'
 import { getPawnAvailableMoves } from './pawn'
 import { TPlayer } from 'types/Chess'
 import { hash, makeMove } from '../position'
-import {
+import { memoize } from 'lodash'
+
+const pieceToMoveFunctionMap = {
+  'wp': getPawnAvailableMoves,
+  'bp': getPawnAvailableMoves,
+  'wn': getKnightAvailableMoves,
+  'bn': getKnightAvailableMoves,
+  'wb': getBishopAvailableMoves,
+  'bb': getBishopAvailableMoves,
+  'wr': getRockAvailableMoves,
+  'br': getRockAvailableMoves,
+  'wq': getQueenAvailableMoves,
+  'bq': getQueenAvailableMoves,
+  'wk': getKingAvailableMoves,
+  'bk': getKingAvailableMoves
+}
+
+const getAvailableMovesWithoutFilteringMemoized = memoize(getAvailableMovesWithoutFiltering)
   getCheck,
   getIsBlackKingChecked,
   getIsWhiteKingChecked
@@ -189,45 +206,9 @@ export const getAvailableMovesWithoutFiltering = (
   position?: TPosition
 ): TSquare[] => {
   if (!activeCell || !position) return []
-  let moves: TSquare[] = []
-
-  switch (activeCell.piece) {
-    case 'wp':
-    case 'bp': {
-      moves = getPawnAvailableMoves({ piece: activeCell, position })
-      break
-    }
-    case 'wn':
-    case 'bn': {
-      moves = getKnightAvailableMoves({ piece: activeCell, position })
-      break
-    }
-    case 'wb':
-    case 'bb': {
-      moves = getBishopAvailableMoves({ piece: activeCell, position })
-      break
-    }
-    case 'wr':
-    case 'br': {
-      moves = getRockAvailableMoves({ piece: activeCell, position })
-      break
-    }
-    case 'wq':
-    case 'bq': {
-      moves = getQueenAvailableMoves({ piece: activeCell, position })
-      break
-    }
-    case 'wk':
-    case 'bk': {
-      moves = getKingAvailableMoves({ piece: activeCell, position })
-      break
-    }
-    default: {
-      moves = []
-    }
-  }
-
-  return moves
+  const moveFunction = pieceToMoveFunctionMap[activeCell.piece]
+  if (!moveFunction) return []
+  return moveFunction({ piece: activeCell, position })
 }
 
 export const getAvailableMoves = (
