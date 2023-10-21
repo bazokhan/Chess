@@ -202,13 +202,13 @@ export const getMoves = (
 }
 
 export const getAvailableMovesWithoutFiltering = (
-  activeCell: TCell | null,
-  position?: TPosition
+  activePieceCell: TCell | null,
+  chessPosition?: TPosition
 ): TSquare[] => {
-  if (!activeCell || !position) return []
-  const moveFunction = pieceToMoveFunctionMap[activeCell.piece]
+  if (!activePieceCell || !chessPosition) return []
+  const moveFunction = pieceToMoveFunctionMap[activePieceCell.piece]
   if (!moveFunction) return []
-  return moveFunction({ piece: activeCell, position })
+  return moveFunction({ piece: activePieceCell, chessPosition })
 }
 
 export const getAvailableMoves = (
