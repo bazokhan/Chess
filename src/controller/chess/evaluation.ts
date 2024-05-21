@@ -161,7 +161,7 @@ export const sortByProximity = (
 }
 
 export const generateAllNextMoves = (player: TPlayer, position: TCell[]) => {
-  const kingSquare = position.find((c) => c.piece === `${player}k`)?.square
+  // const kingSquare = position.find((c) => c.piece === `${player}k`)?.square
   const ownPieces = position.filter((c) => c.piece.startsWith(player))
   const sortedOwnPieces = ownPieces
   // .sort((a, b) =>
