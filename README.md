@@ -1,3 +1,8 @@
+# Required steps before running
+
+- Create a folder at the root called "data_sets". It's ignored in git.
+- Run "pnpm run hashing" to generate proximityTable.json inside data_sets
+
 ![reactjs-vite-tailwindcss-boilerplate](https://user-images.githubusercontent.com/16243531/217138979-b854309c-4742-4275-a705-f9fec5158217.jpg)
 
 # React Tailwindcss Boilerplate build with Vite

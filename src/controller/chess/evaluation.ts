@@ -5,7 +5,7 @@ import { fileLog } from '../shared/fileLog'
 import { TPlayer } from 'types/Chess'
 import { getCheckMate, getIsKingCheckMated } from './checks'
 import { TSquare } from 'types/Chess'
-import proximityTable from '../../../data_sets/proximityTable.json'
+// import proximityTable from '../../../data_sets/proximityTable.json'
 
 const WEIGHTS = {
   r: 500,
@@ -178,12 +178,13 @@ export const generateAllNextMoves = (player: TPlayer, position: TCell[]) => {
       return {
         piece,
         // SORTING: prioritize pieces nearer to opponent king
-        moves: kingSquare
-          ? moves.sort((a, b) => {
-              const id = `${kingSquare}${a}${b}`
-              return proximityTable[id as keyof typeof proximityTable]
-            })
-          : moves
+        // moves: kingSquare
+        //   ? moves.sort((a, b) => {
+        //       const id = `${kingSquare}${a}${b}`
+        //       return proximityTable[id as keyof typeof proximityTable]
+        //     })
+        //   : moves
+        moves
       }
     })
     .filter(Boolean)
