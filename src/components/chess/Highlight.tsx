@@ -47,7 +47,7 @@ export const HighLight: FC<TCoordinate & { variant?: Variant }> = ({
         className="absolute z-20 flex h-[12.5%] w-[12.5%] items-center justify-center"
         style={squareStyle}
       >
-        <div className="h-[84%] w-[84%] rounded-full border-[0.32rem] border-black/35" />
+        <div className="h-[80%] w-[80%] rounded-full border-[0.22rem] border-black/20" />
       </div>
     )
   if (variant === 'availableMove')
@@ -56,7 +56,7 @@ export const HighLight: FC<TCoordinate & { variant?: Variant }> = ({
         className="absolute z-20 flex h-[12.5%] w-[12.5%] items-center justify-center"
         style={squareStyle}
       >
-        <div className="h-[34%] w-[34%] rounded-full bg-black/20" />
+        <div className="h-[28%] w-[28%] rounded-full bg-black/15" />
       </div>
     )
   if (variant === 'move')

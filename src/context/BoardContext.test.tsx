@@ -71,12 +71,6 @@ describe('BoardContext interactions', () => {
     expect(result.current.dragState.fromCell?.square).toBe('e2')
 
     act(() => {
-      result.current.updateDrag(220, 240)
-    })
-    expect(result.current.dragState.clientX).toBe(220)
-    expect(result.current.dragState.clientY).toBe(240)
-
-    act(() => {
       result.current.stopDrag()
     })
     expect(result.current.dragState.active).toBe(false)

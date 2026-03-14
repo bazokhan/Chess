@@ -1,4 +1,4 @@
-import { FC, MouseEventHandler, useCallback, useMemo } from 'react'
+import { FC, MouseEventHandler, useCallback, useMemo, useRef } from 'react'
 import { useBoardContext } from 'context/BoardContext'
 import { TCell } from 'types/Chess'
 import {
@@ -22,31 +22,39 @@ export const Piece: FC<PieceProps> = ({ cell, orientation }) => {
   const {
     activeCell,
     setActiveCell,
+    availableMoves,
     startDrag,
-    stopDrag,
+    dragState,
     preferences
   } = useBoardContext()
   const { animate, future } = usePositionContext()
   const isActive = activeCell?.square === cell.square
   const isAnimated = animate[cell.square]?.cell.square === cell.square
+  const suppressNextClickRef = useRef(false)
 
   const logicalCoordinates = getCoordinates(cell.square)
 
   const onToggle: MouseEventHandler = useCallback(
     (e) => {
-      if (!isActive && activeCell) {
+      if (suppressNextClickRef.current) {
+        suppressNextClickRef.current = false
+        e.stopPropagation()
         return
       }
-
-      e.stopPropagation()
-
       if (isActive) {
+        e.stopPropagation()
         setActiveCell(null)
-      } else {
-        setActiveCell(cell)
+        return
       }
+      // If another piece is active and this is a valid capture target, let board handle it
+      if (activeCell && availableMoves.includes(cell.square)) {
+        return
+      }
+      // Switch selection to this piece
+      e.stopPropagation()
+      setActiveCell(cell)
     },
-    [activeCell, cell, isActive, setActiveCell]
+    [activeCell, availableMoves, cell, isActive, setActiveCell]
   )
 
   const displayCoordinates = useMemo(() => {
@@ -63,7 +71,10 @@ export const Piece: FC<PieceProps> = ({ cell, orientation }) => {
     (e: React.PointerEvent<HTMLDivElement>) => {
       if (future?.length) return
       if (e.button !== 0) return
+      // If another piece is active and this is a valid capture target, let click/board handle it
+      if (activeCell && availableMoves.includes(cell.square)) return
       e.stopPropagation()
+      suppressNextClickRef.current = true
       setActiveCell(cell)
       startDrag({
         cell,
@@ -71,19 +82,11 @@ export const Piece: FC<PieceProps> = ({ cell, orientation }) => {
         clientX: e.clientX,
         clientY: e.clientY
       })
-      ;(e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId)
     },
-    [cell, future?.length, setActiveCell, startDrag]
+    [activeCell, availableMoves, cell, future?.length, setActiveCell, startDrag]
   )
 
-  const onPointerUp = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      if (e.button !== 0) return
-      ;(e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId)
-      stopDrag()
-    },
-    [stopDrag]
-  )
+  const isDragging = dragState.active && dragState.fromCell?.square === cell.square
 
   return (
     <div
@@ -93,11 +96,11 @@ export const Piece: FC<PieceProps> = ({ cell, orientation }) => {
       style={{
         top: `${displayCoordinates.y * 12.5}%`,
         left: `${displayCoordinates.x * 12.5}%`,
-        transition: `all ${ANIMATION_DURATION / preferences.animationSpeed}ms`
+        transition: isDragging ? 'none' : `all ${ANIMATION_DURATION / preferences.animationSpeed}ms`,
+        opacity: isDragging ? 0 : 1
       }}
       onClick={future?.length ? undefined : onToggle}
       onPointerDown={onPointerDown}
-      onPointerUp={onPointerUp}
     >
       {renderPieceSet(cell.piece, preferences.pieceTheme, 'h-full w-full select-none')}
     </div>

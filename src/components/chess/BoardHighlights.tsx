@@ -12,7 +12,6 @@ type HighlightsProps = {
   isWhiteKingInCheck: boolean
   highlightedCoordinates: { x: number; y: number }[]
   availableMoves: TSquare[]
-  moves: { x: number; y: number }[]
   history: { coordinates: { x: number; y: number }[] }[]
   activeCoordinates: { x: number; y: number } | null
   position: TCell[]
@@ -24,7 +23,6 @@ export const Highlights: FC<HighlightsProps> = ({
   isWhiteKingInCheck,
   highlightedCoordinates,
   availableMoves,
-  moves,
   history,
   activeCoordinates,
   position,
@@ -77,10 +75,6 @@ export const Highlights: FC<HighlightsProps> = ({
             }
           />
         )
-      })}
-      {moves?.map((m) => {
-        const c = toDisplay(m.x, m.y)
-        return <HighLight key={`${m.x}-${m.y}`} x={c.x} y={c.y} variant="newMove" />
       })}
       {activeCoordinates
         ? (() => {

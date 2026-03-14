@@ -1,19 +1,18 @@
 import { useBoardContext } from 'context/BoardContext'
-import { FC, useEffect, useMemo, useRef, useState } from 'react'
+import { FC, useEffect, useRef, useState, useCallback } from 'react'
 import { Highlights } from './BoardHighlights'
 import { Pieces } from './BoardPieces'
 import { BoardGrid } from './BoardGrid'
 import { usePositionContext } from 'context/PositionContext'
 import {
   getCoordinates,
-  getDisplayCoordinate,
   getLogicalCoordinate
 } from 'controller/chess/coordinates'
 import { getPosition } from 'controller/chess/getPosition.web'
+import { getAvailableMoves } from 'controller/chess/moves'
 import { TSquare } from 'types/Chess'
 import { TPlayer } from 'types/Chess'
 import { BoardAnnotations } from './BoardAnnotations'
-import { useTurnContext } from 'context/TurnContext'
 import { renderPieceSet } from './pieceSet'
 
 type BoardProps = {
@@ -26,7 +25,9 @@ export const Board: FC<BoardProps> = ({
   orientation = 'w'
 }) => {
   const boardRef = useRef<HTMLDivElement>(null)
+  const ghostRef = useRef<HTMLDivElement>(null)
   const drawStartRef = useRef<{ x: number; y: number } | null>(null)
+  const suppressNextBoardClickRef = useRef(false)
   const [keyboardSquare, setKeyboardSquare] = useState<{ x: number; y: number } | null>(
     null
   )
@@ -35,7 +36,6 @@ export const Board: FC<BoardProps> = ({
     activeCell,
     activeCoordinates,
     setActiveCell,
-    toggleHighlight,
     highlightedCoordinates,
     resetHighlightedCoordinates,
     availableMoves,
@@ -48,41 +48,19 @@ export const Board: FC<BoardProps> = ({
     clearAnnotations,
     clearAnnotationsAtCell,
     removeLastAnnotation,
-    premove,
-    setPremove,
     dragState,
-    updateDrag,
     stopDrag,
     preferences,
     getAnnotationColorFromEvent
   } = useBoardContext()
 
-  const { turn } = useTurnContext()
   const {
     position,
     movePieceToCoordinate,
     history,
     isBlackKingInCheck,
-    isWhiteKingInCheck,
-    whiteMoves,
-    blackMoves
+    isWhiteKingInCheck
   } = usePositionContext()
-
-  const moves = useMemo(
-    () =>
-      !activeCell
-        ? []
-        : [...whiteMoves, ...blackMoves]
-            .filter(
-              (m) =>
-                activeCell.piece === m.slice(0, 2) &&
-                activeCell.square === m.slice(2, 4)
-            )
-            .map((m) => m.slice(4) as TSquare)
-            .map(getCoordinates)
-            .map((coord) => getDisplayCoordinate(coord, orientation)),
-    [activeCell, blackMoves, orientation, whiteMoves]
-  )
 
   const getBoardSquare = (clientX: number, clientY: number) => {
     const displayCoordinate = getPosition(clientX, clientY, boardRef.current)
@@ -93,37 +71,48 @@ export const Board: FC<BoardProps> = ({
     return getLogicalCoordinate(clamped, orientation)
   }
 
-  const resolveMove = async (sourceCell: typeof activeCell, targetMove?: TSquare) => {
+  const resolveMove = useCallback(async (sourceCell: typeof activeCell, targetMove?: TSquare) => {
     if (!sourceCell || !targetMove) return
-    const result = await movePieceToCoordinate({
+    await movePieceToCoordinate({
       cell: sourceCell,
       coordinate: targetMove
     })
-    if (!result?.success && sourceCell.piece[0] !== turn) {
-      setPremove({
-        from: sourceCell.square,
-        to: targetMove
-      })
-    } else {
-      setPremove(null)
-    }
-  }
+  }, [movePieceToCoordinate])
+
+  const resolveMoveRef = useRef(resolveMove)
+  resolveMoveRef.current = resolveMove
+
+  const positionRef = useRef(position)
+  positionRef.current = position
 
   useEffect(() => {
     if (!dragState.active || !dragState.fromCell) return
     const onPointerMove = (e: PointerEvent) => {
-      updateDrag(e.clientX, e.clientY)
+      if (ghostRef.current && boardRef.current) {
+        const rect = boardRef.current.getBoundingClientRect()
+        ghostRef.current.style.left = `${e.clientX - rect.left}px`
+        ghostRef.current.style.top = `${e.clientY - rect.top}px`
+      }
     }
     const onPointerUp = async (e: PointerEvent) => {
       const sourceCell = dragState.fromCell
       const square = getBoardSquare(e.clientX, e.clientY)
-      const targetMove = availableMoves.find((m) => {
+      const movedDistance = Math.hypot(
+        e.clientX - dragState.startClientX,
+        e.clientY - dragState.startClientY
+      )
+      const didDrag = movedDistance > 5
+      const dragMoves = sourceCell ? getAvailableMoves(sourceCell, positionRef.current) : []
+      const targetMove = dragMoves.find((m) => {
         const c = getCoordinates(m)
         return c.x === square.x && c.y === square.y
       })
-      await resolveMove(sourceCell, targetMove)
+      if (didDrag) {
+        await resolveMoveRef.current(sourceCell, targetMove)
+        setActiveCell(null)
+        suppressNextBoardClickRef.current = true
+      }
       stopDrag()
-      setActiveCell(null)
     }
     window.addEventListener('pointermove', onPointerMove)
     window.addEventListener('pointerup', onPointerUp)
@@ -132,15 +121,19 @@ export const Board: FC<BoardProps> = ({
       window.removeEventListener('pointerup', onPointerUp)
     }
   }, [
-    availableMoves,
     dragState.active,
     dragState.fromCell,
+    dragState.startClientX,
+    dragState.startClientY,
     setActiveCell,
-    stopDrag,
-    updateDrag
+    stopDrag
   ])
 
   const handleBoardClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (suppressNextBoardClickRef.current) {
+      suppressNextBoardClickRef.current = false
+      return
+    }
     if (!e.isPropagationStopped()) {
       const { x: boardX, y: boardY } = getBoardSquare(e.clientX, e.clientY)
       const targetMove = availableMoves.find((m) => {
@@ -210,7 +203,6 @@ export const Board: FC<BoardProps> = ({
     }
     if (e.key === 'Escape') {
       setActiveCell(null)
-      setPremove(null)
       setKeyboardSquare(null)
       return
     }
@@ -261,7 +253,6 @@ export const Board: FC<BoardProps> = ({
         isWhiteKingInCheck={isWhiteKingInCheck}
         highlightedCoordinates={highlightedCoordinates}
         availableMoves={availableMoves}
-        moves={moves}
         history={history}
         activeCoordinates={activeCoordinates}
         position={position}
@@ -281,10 +272,11 @@ export const Board: FC<BoardProps> = ({
       <Pieces position={position} orientation={orientation} />
       {dragState.active && dragState.fromCell ? (
         <div
-          className="pointer-events-none absolute z-50 h-[12.5%] w-[12.5%] -translate-x-1/2 -translate-y-1/2 opacity-85"
+          ref={ghostRef}
+          className="pointer-events-none absolute z-50 h-[12.5%] w-[12.5%] -translate-x-1/2 -translate-y-1/2"
           style={{
-            left: dragState.clientX - (boardRef.current?.getBoundingClientRect().left ?? 0),
-            top: dragState.clientY - (boardRef.current?.getBoundingClientRect().top ?? 0)
+            left: dragState.startClientX - (boardRef.current?.getBoundingClientRect().left ?? 0),
+            top: dragState.startClientY - (boardRef.current?.getBoundingClientRect().top ?? 0)
           }}
         >
           {renderPieceSet(
@@ -292,13 +284,6 @@ export const Board: FC<BoardProps> = ({
             preferences.pieceTheme,
             'h-full w-full select-none'
           )}
-        </div>
-      ) : null}
-      {premove ? (
-        <div className="pointer-events-none absolute bottom-2 right-2 z-40 rounded bg-black/60 px-2 py-1 text-[10px] text-white">
-          Premove: {premove.from}
-          {'->'}
-          {premove.to}
         </div>
       ) : null}
     </div>

@@ -2,7 +2,6 @@ import {
   FC,
   PropsWithChildren,
   createContext,
-  useEffect,
   useContext,
   useMemo,
   useState
@@ -11,14 +10,13 @@ import { TCell, TCoordinate } from 'types/Chess'
 import { getAvailableMoves } from 'controller/chess/moves'
 import { getCoordinates } from 'controller/chess/coordinates'
 import { usePositionContext } from './PositionContext'
-import { TPlayer, TSquare } from 'types/Chess'
+import { TSquare } from 'types/Chess'
 import {
   AnnotationColor,
   BoardPreferences,
   loadBoardPreferences,
   saveBoardPreferences
 } from 'controller/chess/boardPreferences'
-import { useTurnContext } from './TurnContext'
 
 type BoardArrow = {
   from: TCoordinate
@@ -31,17 +29,13 @@ type BoardCircle = {
   color: AnnotationColor
 }
 
-type Premove = {
-  from: TSquare
-  to: TSquare
-}
 
 type DragState = {
   active: boolean
   pointerId: number | null
   fromCell: TCell | null
-  clientX: number
-  clientY: number
+  startClientX: number
+  startClientY: number
 }
 
 const BoardContext = createContext<{
@@ -67,8 +61,6 @@ const BoardContext = createContext<{
   clearAnnotations: () => void
   clearAnnotationsAtCell: (coordinate: TCoordinate) => void
   removeLastAnnotation: () => void
-  premove: Premove | null
-  setPremove: (premove: Premove | null) => void
   dragState: DragState
   startDrag: (args: {
     cell: TCell
@@ -76,7 +68,6 @@ const BoardContext = createContext<{
     clientX: number
     clientY: number
   }) => void
-  updateDrag: (clientX: number, clientY: number) => void
   stopDrag: () => void
   preferences: BoardPreferences
   updatePreferences: (next: Partial<BoardPreferences>) => void
@@ -103,17 +94,14 @@ const BoardContext = createContext<{
   clearAnnotations: () => {},
   clearAnnotationsAtCell: () => {},
   removeLastAnnotation: () => {},
-  premove: null,
-  setPremove: () => {},
   dragState: {
     active: false,
     pointerId: null,
     fromCell: null,
-    clientX: 0,
-    clientY: 0
+    startClientX: 0,
+    startClientY: 0
   },
   startDrag: () => {},
-  updateDrag: () => {},
   stopDrag: () => {},
   preferences: loadBoardPreferences(),
   updatePreferences: () => {},
@@ -123,7 +111,6 @@ const BoardContext = createContext<{
 export const useBoardContext = () => useContext(BoardContext)
 
 export const BoardProvider: FC<PropsWithChildren> = ({ children }) => {
-  const { turn } = useTurnContext()
   const [activeCell, setActiveCell] = useState<TCell | null>(null)
   const [drawPreview, setDrawPreview] = useState<{
     from: TCoordinate
@@ -132,13 +119,12 @@ export const BoardProvider: FC<PropsWithChildren> = ({ children }) => {
   } | null>(null)
   const [arrows, setArrows] = useState<BoardArrow[]>([])
   const [circles, setCircles] = useState<BoardCircle[]>([])
-  const [premove, setPremove] = useState<Premove | null>(null)
   const [dragState, setDragState] = useState<DragState>({
     active: false,
     pointerId: null,
     fromCell: null,
-    clientX: 0,
-    clientY: 0
+    startClientX: 0,
+    startClientY: 0
   })
   const [preferences, setPreferences] = useState<BoardPreferences>(
     loadBoardPreferences()
@@ -146,8 +132,7 @@ export const BoardProvider: FC<PropsWithChildren> = ({ children }) => {
   const [highlightedCoordinates, setHighlightedCoordinates] = useState<
     TCoordinate[]
   >([])
-  const { position, isGameOver, movePieceToCoordinate, hPosition } =
-    usePositionContext()
+  const { position, isGameOver } = usePositionContext()
   const toggleHighlight = (cell: TCoordinate) => {
     if (highlightedCoordinates.find((c) => c.x === cell.x && c.y === cell.y)) {
       setHighlightedCoordinates(
@@ -268,17 +253,9 @@ export const BoardProvider: FC<PropsWithChildren> = ({ children }) => {
       active: true,
       pointerId,
       fromCell: cell,
-      clientX,
-      clientY
+      startClientX: clientX,
+      startClientY: clientY
     })
-  }
-
-  const updateDrag = (clientX: number, clientY: number) => {
-    setDragState((prev) => ({
-      ...prev,
-      clientX,
-      clientY
-    }))
   }
 
   const stopDrag = () => {
@@ -286,8 +263,8 @@ export const BoardProvider: FC<PropsWithChildren> = ({ children }) => {
       active: false,
       pointerId: null,
       fromCell: null,
-      clientX: 0,
-      clientY: 0
+      startClientX: 0,
+      startClientY: 0
     })
   }
 
@@ -308,28 +285,6 @@ export const BoardProvider: FC<PropsWithChildren> = ({ children }) => {
     ? getCoordinates(activeCell.square)
     : null
 
-  useEffect(() => {
-    if (!premove) return
-    const piece = hPosition[premove.from]
-    if (!piece) {
-      setPremove(null)
-      return
-    }
-    const side = piece.piece[0] as TPlayer
-    if (side !== turn) return
-    const legal = getAvailableMoves(piece, position)
-    if (!legal.includes(premove.to)) {
-      setPremove(null)
-      return
-    }
-    movePieceToCoordinate({
-      cell: piece,
-      coordinate: premove.to,
-      skipAnimation: false
-    })
-    setPremove(null)
-  }, [hPosition, movePieceToCoordinate, position, premove, turn])
-
   return (
     <BoardContext.Provider
       value={{
@@ -349,11 +304,8 @@ export const BoardProvider: FC<PropsWithChildren> = ({ children }) => {
         clearAnnotations,
         clearAnnotationsAtCell,
         removeLastAnnotation,
-        premove,
-        setPremove,
         dragState,
         startDrag,
-        updateDrag,
         stopDrag,
         preferences,
         updatePreferences,

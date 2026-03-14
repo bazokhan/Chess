@@ -1,86 +1,94 @@
-# Required steps before running
+# Chess Engine Playground
 
-- Create a folder at the root called "logs". It's ignored in git.
-- Create a folder at the root called "data_sets". It's ignored in git.
-- Run "pnpm run hashing" to generate proximityTable.json inside data_sets
+A board-games playground centered on a chess engine I originally wrote years ago,
+now rewritten with a modern bitboards approach.
 
-![reactjs-vite-tailwindcss-boilerplate](https://user-images.githubusercontent.com/16243531/217138979-b854309c-4742-4275-a705-f9fec5158217.jpg)
+This repository is where I keep evolving the engine architecture, testing
+algorithms, and exposing smaller interactive demos (like TicTacToe and minimax
+exploration) that help validate ideas quickly.
 
-# React Tailwindcss Boilerplate build with Vite
+## Engine story
 
-This is a boilerplate build with Vite, React 18, TypeScript, Vitest, Testing Library, TailwindCSS 3, Eslint and Prettier.
+- **Legacy engine**: the original implementation with the first generation of
+  move generation and search ideas.
+- **Bitboards engine**: the rewrite focused on performance, cleaner
+  representation, and better extensibility.
+- **Current direction**: continue improving search depth, evaluation quality,
+  telemetry, and analysis tooling.
 
-## What is inside?
+## Available pages
 
-This project uses many tools like:
+- `/` Home page with project context and navigation.
+- `/chess` Main chess playground (board interaction, analysis views, telemetry,
+  and engine mode switching).
+- `/minimax` Minimax-focused experimentation page.
+- `/tictactoe` Small game sandbox for quick AI/algorithm feedback loops.
+
+## Tech stack
 
 - [Vite](https://vitejs.dev)
-- [ReactJS](https://reactjs.org)
+- [React](https://react.dev)
 - [TypeScript](https://www.typescriptlang.org)
+- [TailwindCSS](https://tailwindcss.com)
 - [Vitest](https://vitest.dev)
-- [Testing Library](https://testing-library.com)
-- [Tailwindcss](https://tailwindcss.com)
-- [Eslint](https://eslint.org)
-- [Prettier](https://prettier.io)
+- [React Router](https://reactrouter.com)
 
-## Getting Started
+## Getting started
 
-### Install
-
-Create the project.
-
-```bash
-npx degit joaopaulomoraes/reactjs-vite-tailwindcss-boilerplate my-app
-```
-
-Access the project directory.
-
-```bash
-cd my-app
-```
-
-Install dependencies.
+### 1) Install dependencies
 
 ```bash
 pnpm install
 ```
 
-Serve with hot reload at <http://localhost:5173>.
+### 2) Create required local folders
+
+Create these folders at the repository root:
+
+- `logs`
+- `data_sets`
+
+### 3) Generate hash data
+
+```bash
+pnpm run hashing
+```
+
+This command generates `proximityTable.json` in `data_sets`.
+
+### 4) Run the app
 
 ```bash
 pnpm run dev
 ```
 
-### Lint
+Open <http://localhost:5173>.
 
-```bash
-pnpm run lint
-```
+## Useful scripts
 
-### Typecheck
+- `pnpm run dev` - start development server
+- `pnpm run build` - typecheck and build
+- `pnpm run typecheck` - run TypeScript checks only
+- `pnpm run lint` - run eslint
+- `pnpm run test` - run Vitest in terminal
+- `pnpm run test:ui` - run Vitest UI
+- `pnpm run solvePuzzle` - run puzzle-solving script
+- `pnpm run readChessPuzzles` - parse/read chess puzzle data
+- `pnpm run botMatch` - run bot-vs-bot script
 
-```bash
-pnpm run typecheck
-```
+## Notes
 
-### Build
+- The minimax page can be computationally heavy depending on current settings.
+- This project intentionally combines product-like UI with algorithm
+  experimentation.
 
-```bash
-pnpm run build
-```
+## Other projects
 
-### Test
-
-```bash
-pnpm run test
-```
-
-View and interact with your tests via UI.
-
-```bash
-pnpm run test:ui
-```
+- [MyGameEngine](https://my-game-engine-zeta.vercel.app/) - playful game engine
+  lab with multiple experiment modules.
+- [Gamercury Studio](https://gamercury.lovable.app/) - indie portfolio for
+  mobile apps and games.
 
 ## License
 
-This project is licensed under the MIT License.
+MIT

@@ -140,8 +140,6 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
   const {
     clearAnnotations,
     removeLastAnnotation,
-    premove,
-    setPremove,
     preferences,
     updatePreferences
   } = useBoardContext()
@@ -695,13 +693,6 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
               >
                 {showBoardTools ? 'Hide board tools' : 'Show board tools'}
               </button>
-              <button
-                type="button"
-                className="chess-overlay-btn text-xs"
-                onClick={() => setPremove(null)}
-              >
-                {premove ? `Clear premove (${premove.from}->${premove.to})` : 'No premove'}
-              </button>
             </div>
 
             <div
@@ -775,14 +766,6 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
                 <option value="blue">Arrow Color: Blue</option>
                 <option value="yellow">Arrow Color: Yellow</option>
               </select>
-              <button
-                type="button"
-                className="chess-overlay-btn justify-start text-xs"
-                onClick={() => setPremove(null)}
-                title="Clear pending premove"
-              >
-                {premove ? `Premove ${premove.from}->${premove.to}` : 'No premove'}
-              </button>
             </div>
 
             <div className="mb-2">

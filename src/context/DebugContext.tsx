@@ -198,12 +198,6 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
     async (playerTurn?: TPlayer, recordHistory?: boolean) => {
       if (forceStop && !playerTurn) return
       if (!aiPlayers.includes(turn)) return
-      // let bestMove: TreeItem | null
-      // if (playerTurn === 'b') {
-      //   bestMove = aiV2(playerTurn)
-      // } else {
-      //   bestMove = aiV3(playerTurn) as TreeItem | null
-      // }
 
       const bestMove = aiV3(turn, position, playerTurn, engineMode) as
         | TreeItem
@@ -220,16 +214,19 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
 
       return true
     },
-    [
-      aiPlayers,
-      engineMode,
-      forceStop,
-      moveNumber,
-      movePieceToCoordinate,
-      position,
-      turn
-    ]
+    [aiPlayers, engineMode, forceStop, movePieceToCoordinate, position, turn]
   )
+
+  const handleAIPlayRef = useRef(handleAIPlay)
+  handleAIPlayRef.current = handleAIPlay
+
+  const aiPlayersRef = useRef(aiPlayers)
+  aiPlayersRef.current = aiPlayers
+
+  const isGameOverRef = useRef(isGameOver)
+  isGameOverRef.current = isGameOver
+
+  const isAIPlayingRef = useRef(false)
 
   const runMatch = async () => {}
 
@@ -241,43 +238,29 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
   }, [])
 
   useEffect(() => {
+    if (isAIPlayingRef.current) return
     if (moveRef.current === moveNumber) return
-    if (isGameOver || forceStop || !aiPlayers.includes(turn)) {
-      // const logText = isBlackKingCheckMated
-      //   ? 'White won by checkmate'
-      //   : isWhiteKingCheckMated
-      //   ? 'Black won by checkmate'
-      //   : isBlackKingStaleMated || isWhiteKingStaleMated
-      //   ? 'Game drawn by stalemate'
-      //   : 'Unknown status'
-      // fileLog('Games', `Game over in ${moveNumber} moves. ${logText}.`)
+    if (isGameOverRef.current || forceStop || !aiPlayersRef.current.includes(turn)) {
       return
     }
     moveRef.current = moveNumber
+    isAIPlayingRef.current = true
+    const currentTurn = turn
     const play = async () => {
-      await handleAIPlay(turn, true)
-      const newMoveNumber = moveNumber + 1
+      try {
+        await handleAIPlayRef.current(currentTurn, true)
+      } finally {
+        isAIPlayingRef.current = false
+      }
       await new Promise((resolve) => {
         setTimeout(() => {
-          setMoveNumber(newMoveNumber)
+          setMoveNumber((prev) => prev + 1)
           resolve(true)
         }, 0)
       })
-      // fileLog('Games', `Move: ${newMoveNumber}`)
     }
     play()
-  }, [
-    aiPlayers,
-    forceStop,
-    handleAIPlay,
-    isBlackKingCheckMated,
-    isBlackKingStaleMated,
-    isGameOver,
-    isWhiteKingCheckMated,
-    isWhiteKingStaleMated,
-    moveNumber,
-    turn
-  ])
+  }, [forceStop, moveNumber, turn])
 
   const clearTelemetry = () => {
     clearTelemetryEvents()
