@@ -31,6 +31,7 @@ import {
   printMoves
 } from 'controller/chess/evaluation'
 import { useDebugContext } from 'context/DebugContext'
+import { useBoardContext } from 'context/BoardContext'
 import { Paragraph } from '../ui/Paragraph'
 import { GameLayout } from 'components/layouts/GameLayout'
 import { Column } from '../layouts/Column'
@@ -41,6 +42,7 @@ import { getCoordinates } from 'controller/chess/coordinates'
 import { Diagram } from './Diagram'
 import { puzzles } from 'data/puzzles'
 import { formatTelemetryEventsText, TelemetryEvent } from 'controller/chess/telemetry'
+import { BoardTheme, PieceTheme } from 'controller/chess/boardPreferences'
 
 type Analysis = 'single_board' | 'board_tree' | 'tree_diagram' | 'none'
 type ConfirmAction = 'current' | 'standard' | null
@@ -133,6 +135,14 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
   const [isPuzzleModalOpen, setIsPuzzleModalOpen] = useState(false)
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null)
   const [telemetryExpanded, setTelemetryExpanded] = useState(false)
+  const {
+    clearAnnotations,
+    removeLastAnnotation,
+    premove,
+    setPremove,
+    preferences,
+    updatePreferences
+  } = useBoardContext()
 
   const next = tree.map((p) => ({
     ...p,
@@ -230,6 +240,29 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
       latestEngineMetrics
     }
   }, [telemetryEvents])
+
+  const pvCandidates = useMemo(
+    () =>
+      [...(filteredNext as (TreeItem & { evaluation?: number })[])]
+        .sort((a, b) =>
+          turn === 'w'
+            ? (b.evaluation ?? -Infinity) - (a.evaluation ?? -Infinity)
+            : (a.evaluation ?? Infinity) - (b.evaluation ?? Infinity)
+        )
+        .slice(0, 5),
+    [filteredNext, turn]
+  )
+
+  const evalTrend = useMemo(() => {
+    const recent = history.slice(-10)
+    return recent.map((item) => {
+      const whiteMove = `${item.oldCell.square}${item.newCell.square}`
+      return {
+        move: whiteMove,
+        score: evaluatePosition(position)
+      }
+    })
+  }, [history, position])
 
   const boardChild = isValidElement(children)
     ? cloneElement(children as ReactElement<{ orientation?: TPlayer }>, {
@@ -638,6 +671,81 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
               </div>
             </div>
 
+            <div className="mb-2 grid grid-cols-2 gap-1 lg:grid-cols-6">
+              <select
+                className="rounded border border-[#5f5a52] bg-[#2f2d29] px-2 py-1 text-xs text-[#f0e8d7]"
+                value={preferences.boardTheme}
+                onChange={(e) =>
+                  updatePreferences({ boardTheme: e.target.value as BoardTheme })
+                }
+                title="Board color theme"
+              >
+                <option value="classic">Theme: Classic</option>
+                <option value="olive">Theme: Olive</option>
+                <option value="blue">Theme: Blue</option>
+              </select>
+              <select
+                className="rounded border border-[#5f5a52] bg-[#2f2d29] px-2 py-1 text-xs text-[#f0e8d7]"
+                value={preferences.pieceTheme}
+                onChange={(e) =>
+                  updatePreferences({ pieceTheme: e.target.value as PieceTheme })
+                }
+                title="Piece style"
+              >
+                <option value="classic">Pieces: Classic</option>
+                <option value="neo">Pieces: Neo</option>
+              </select>
+              <button
+                type="button"
+                className={`chess-overlay-btn justify-start text-xs ${
+                  preferences.moveSounds ? 'chess-overlay-btn-active' : ''
+                }`}
+                onClick={() => updatePreferences({ moveSounds: !preferences.moveSounds })}
+                title="Toggle move sounds"
+              >
+                Sound {preferences.moveSounds ? 'On' : 'Off'}
+              </button>
+              <button
+                type="button"
+                className={`chess-overlay-btn justify-start text-xs ${
+                  preferences.showCoordinates ? 'chess-overlay-btn-active' : ''
+                }`}
+                onClick={() =>
+                  updatePreferences({ showCoordinates: !preferences.showCoordinates })
+                }
+                title="Toggle board coordinates"
+              >
+                Coords {preferences.showCoordinates ? 'On' : 'Off'}
+              </button>
+              <select
+                className="rounded border border-[#5f5a52] bg-[#2f2d29] px-2 py-1 text-xs text-[#f0e8d7]"
+                value={preferences.annotationColor}
+                onChange={(e) =>
+                  updatePreferences({
+                    annotationColor: e.target.value as
+                      | 'green'
+                      | 'red'
+                      | 'blue'
+                      | 'yellow'
+                  })
+                }
+                title="Default right-click annotation color"
+              >
+                <option value="green">Arrow Color: Green</option>
+                <option value="red">Arrow Color: Red</option>
+                <option value="blue">Arrow Color: Blue</option>
+                <option value="yellow">Arrow Color: Yellow</option>
+              </select>
+              <button
+                type="button"
+                className="chess-overlay-btn justify-start text-xs"
+                onClick={() => setPremove(null)}
+                title="Clear pending premove"
+              >
+                {premove ? `Premove ${premove.from}->${premove.to}` : 'No premove'}
+              </button>
+            </div>
+
             <div className="mb-2">
               <SideDock
                 player={topPlayer}
@@ -664,6 +772,24 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
           <div className={`${isAnalysisOpen ? 'block min-h-0' : 'hidden'} xl:block`}>
             <Column className="h-full min-h-0 overflow-hidden">
               <p className="title m-0">Analysis</p>
+              <div className="mb-2 grid grid-cols-2 gap-1">
+                <button
+                  type="button"
+                  className="chess-overlay-btn !p-1 text-[11px]"
+                  onClick={clearAnnotations}
+                  title="Clear all board annotations"
+                >
+                  Clear all annotations
+                </button>
+                <button
+                  type="button"
+                  className="chess-overlay-btn !p-1 text-[11px]"
+                  onClick={removeLastAnnotation}
+                  title="Undo latest board annotation"
+                >
+                  Undo annotation
+                </button>
+              </div>
               <div className="btn-group">
                 <button
                   type="button"
@@ -699,6 +825,41 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
                 >
                   Diagram
                 </button>
+              </div>
+              <div className="mt-2 rounded border border-[#5e594f] bg-[#2f2d29] p-2">
+                <p className="m-0 text-[11px] font-bold uppercase tracking-[0.08em] text-[#cabfae]">
+                  Principal Variations
+                </p>
+                <div className="mt-1 space-y-1">
+                  {pvCandidates.map((candidate) => (
+                    <p key={`pv-${candidate.piece.square}-${candidate.move}`} className="m-0 text-xs text-[#eee6d5]">
+                      {candidate.piece.square}
+                      {'->'}
+                      {candidate.move} ({(candidate.evaluation ?? 0).toFixed(0)})
+                    </p>
+                  ))}
+                  {!pvCandidates.length ? (
+                    <p className="m-0 text-xs text-[#a79f91]">No candidate lines yet.</p>
+                  ) : null}
+                </div>
+              </div>
+              <div className="mt-2 rounded border border-[#5e594f] bg-[#2f2d29] p-2">
+                <p className="m-0 text-[11px] font-bold uppercase tracking-[0.08em] text-[#cabfae]">
+                  Eval Trend
+                </p>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {evalTrend.map((row) => (
+                    <span
+                      key={`trend-${row.move}-${row.score}`}
+                      className="rounded border border-[#666055] bg-[#37342f] px-1 py-[2px] text-[10px] text-[#eee2ce]"
+                    >
+                      {row.move}:{row.score.toFixed(0)}
+                    </span>
+                  ))}
+                  {!evalTrend.length ? (
+                    <p className="m-0 text-xs text-[#a79f91]">Play moves to build trend.</p>
+                  ) : null}
+                </div>
               </div>
               <div className="mt-2 overflow-y-auto xl:max-h-[calc(100vh-230px)]">
                 {renderAnalysis()}

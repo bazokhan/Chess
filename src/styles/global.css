@@ -41,3 +41,15 @@
 .telemetry-slow {
   @apply border-red-700 bg-red-900/50 text-red-200;
 }
+
+.board-theme-classic {
+  @apply bg-[#e9edcc];
+}
+
+.board-theme-olive {
+  @apply bg-[#e9edcc];
+}
+
+.board-theme-blue {
+  @apply bg-[#e7f0fb];
+}

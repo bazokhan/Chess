@@ -22,7 +22,7 @@ import { usePositionContext } from 'context/PositionContext'
 import { ANIMATION_DURATION } from 'controller/chess/constants'
 import { TPlayer } from 'types/Chess'
 
-const pieceImages = {
+export const pieceImages = {
   br: br,
   bn: bn,
   bb: bb,
@@ -46,7 +46,13 @@ type PieceProps = {
 // #ffff33  /50
 
 export const Piece: FC<PieceProps> = ({ cell, orientation }) => {
-  const { activeCell, setActiveCell } = useBoardContext()
+  const {
+    activeCell,
+    setActiveCell,
+    startDrag,
+    stopDrag,
+    preferences
+  } = useBoardContext()
   const { animate, future } = usePositionContext()
   const isActive = activeCell?.square === cell.square
   const isAnimated = animate[cell.square]?.cell.square === cell.square
@@ -80,19 +86,55 @@ export const Piece: FC<PieceProps> = ({ cell, orientation }) => {
     return getDisplayCoordinate(currentCoordinates, orientation)
   }, [animate, cell.square, isAnimated, logicalCoordinates.x, logicalCoordinates.y, orientation])
 
+  const onPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (future?.length) return
+      if (e.button !== 0) return
+      e.stopPropagation()
+      setActiveCell(cell)
+      startDrag({
+        cell,
+        pointerId: e.pointerId,
+        clientX: e.clientX,
+        clientY: e.clientY
+      })
+      ;(e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId)
+    },
+    [cell, future?.length, setActiveCell, startDrag]
+  )
+
+  const onPointerUp = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (e.button !== 0) return
+      ;(e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId)
+      stopDrag()
+    },
+    [stopDrag]
+  )
+
   return (
     <div
       className={`absolute ${
         isActive ? 'z-30' : 'z-20'
-      }  h-[12.5%] w-[12.5%] cursor-grab`}
+      } h-[12.5%] w-[12.5%] cursor-grab touch-none`}
       style={{
         top: `${displayCoordinates.y * 12.5}%`,
         left: `${displayCoordinates.x * 12.5}%`,
-        transition: `all ${ANIMATION_DURATION}ms`
+        transition: `all ${ANIMATION_DURATION / preferences.animationSpeed}ms`
       }}
       onClick={future?.length ? undefined : onToggle}
+      onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
     >
-      <img className="h-full w-full" src={pieceImages[cell.piece]} />
+      <img
+        className={`h-full w-full select-none ${
+          preferences.pieceTheme === 'neo'
+            ? 'drop-shadow-[0_2px_4px_rgba(0,0,0,0.45)] saturate-110'
+            : ''
+        }`}
+        src={pieceImages[cell.piece]}
+        draggable={false}
+      />
     </div>
   )
 }

@@ -42,85 +42,59 @@ export const Highlights: FC<HighlightsProps> = ({
   const toDisplay = (x: number, y: number) =>
     getDisplayCoordinate({ x, y }, orientation)
 
+  const lastMove = history?.at(-1)?.coordinates ?? []
+  const checkHighlights = [
+    isBlackKingInCheck ? { x: blackX, y: blackY } : null,
+    isWhiteKingInCheck ? { x: whiteX, y: whiteY } : null
+  ].filter(Boolean) as { x: number; y: number }[]
+
   return (
     <>
-      {isBlackKingInCheck ? (
-        (() => {
-          const c = toDisplay(blackX, blackY)
-          return (
-        <HighLight
-          key={`${blackX}-${blackY}-${isBlackKingInCheck}`}
-          x={c.x}
-          y={c.y}
-          variant="check"
-        />
-          )
-        })()
-      ) : null}
-      {isWhiteKingInCheck ? (
-        (() => {
-          const c = toDisplay(whiteX, whiteY)
-          return (
-        <HighLight
-          key={`${whiteX}-${whiteY}-${isWhiteKingInCheck}`}
-          x={c.x}
-          y={c.y}
-          variant="check"
-        />
-          )
-        })()
-      ) : null}
-      {isBlackKingInCheck ? (
-        (() => {
-          const c = toDisplay(blackX, blackY)
-          return <HighLight key={`${blackX}-${blackY}`} x={c.x} y={c.y} />
-        })()
-      ) : null}
+      {lastMove.map(({ x, y }) => {
+        const c = toDisplay(x, y)
+        return <HighLight key={`last-${x}-${y}`} x={c.x} y={c.y} variant="move" />
+      })}
+      {checkHighlights.map(({ x, y }) => {
+        const c = toDisplay(x, y)
+        return <HighLight key={`check-${x}-${y}`} x={c.x} y={c.y} variant="check" />
+      })}
       {highlightedCoordinates?.map(({ x, y }) => {
         const c = toDisplay(x, y)
         return <HighLight key={`${x}-${y}`} x={c.x} y={c.y} />
       })}
-      {availableMoves?.map((m) => (
-        (() => {
-          const mCoord = getCoordinates(m)
-          const c = toDisplay(mCoord.x, mCoord.y)
-          return (
-            <HighLight
-              key={`${mCoord.x}-${mCoord.y}`}
-              x={c.x}
-              y={c.y}
-              variant={
-                position.find((cell) => cell.square === m)
-                  ? 'availableCapture'
-                  : 'availableMove'
-              }
-            />
-          )
-        })()
-      ))}
+      {availableMoves?.map((m) => {
+        const mCoord = getCoordinates(m)
+        const c = toDisplay(mCoord.x, mCoord.y)
+        return (
+          <HighLight
+            key={`${mCoord.x}-${mCoord.y}`}
+            x={c.x}
+            y={c.y}
+            variant={
+              position.find((cell) => cell.square === m)
+                ? 'availableCapture'
+                : 'availableMove'
+            }
+          />
+        )
+      })}
       {moves?.map((m) => {
         const c = toDisplay(m.x, m.y)
         return <HighLight key={`${m.x}-${m.y}`} x={c.x} y={c.y} variant="newMove" />
       })}
-      {history
-        ?.at(-1)
-        ?.coordinates?.map(({ x, y }) => {
-          const c = toDisplay(x, y)
-          return <HighLight key={`${x}-${y}`} x={c.x} y={c.y} variant="move" />
-        })}
-      {activeCoordinates ? (
-        (() => {
-          const c = toDisplay(activeCoordinates.x, activeCoordinates.y)
-          return (
-            <HighLight
-              key={`${activeCoordinates.x}-${activeCoordinates.y}`}
-              x={c.x}
-              y={c.y}
-              variant="move"
-            />
-          )
-        })()
-      ) : null}
+      {activeCoordinates
+        ? (() => {
+            const c = toDisplay(activeCoordinates.x, activeCoordinates.y)
+            return (
+              <HighLight
+                key={`${activeCoordinates.x}-${activeCoordinates.y}`}
+                x={c.x}
+                y={c.y}
+                variant="move"
+              />
+            )
+          })()
+        : null}
     </>
   )
 }
