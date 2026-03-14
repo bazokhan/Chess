@@ -1,17 +1,21 @@
 import { FC } from 'react'
 import { HighLight } from './Highlight'
-import { getCoordinates } from 'controller/chess/coordinates'
+import {
+  getCoordinates,
+  getDisplayCoordinate
+} from 'controller/chess/coordinates'
 import { TCell, TSquare } from 'types/Chess'
+import { TPlayer } from 'types/Chess'
 
 type HighlightsProps = {
   isBlackKingInCheck: boolean
   isWhiteKingInCheck: boolean
   highlightedCoordinates: { x: number; y: number }[]
   availableMoves: TSquare[]
-  moves: { x: number; y: number }[]
   history: { coordinates: { x: number; y: number }[] }[]
   activeCoordinates: { x: number; y: number } | null
   position: TCell[]
+  orientation: TPlayer
 }
 
 export const Highlights: FC<HighlightsProps> = ({
@@ -19,10 +23,10 @@ export const Highlights: FC<HighlightsProps> = ({
   isWhiteKingInCheck,
   highlightedCoordinates,
   availableMoves,
-  moves,
   history,
   activeCoordinates,
-  position
+  position,
+  orientation
 }) => {
   const blackKing = position.find((p) => p.piece === 'bk')
   const whiteKing = position.find((p) => p.piece === 'wk')
@@ -33,58 +37,58 @@ export const Highlights: FC<HighlightsProps> = ({
     ? getCoordinates(whiteKing?.square)
     : { x: 0, y: 0 }
 
+  const toDisplay = (x: number, y: number) =>
+    getDisplayCoordinate({ x, y }, orientation)
+
+  const lastMove = history?.at(-1)?.coordinates ?? []
+  const checkHighlights = [
+    isBlackKingInCheck ? { x: blackX, y: blackY } : null,
+    isWhiteKingInCheck ? { x: whiteX, y: whiteY } : null
+  ].filter(Boolean) as { x: number; y: number }[]
+
   return (
     <>
-      {isBlackKingInCheck ? (
-        <HighLight
-          key={`${blackX}-${blackY}-${isBlackKingInCheck}`}
-          x={blackX}
-          y={blackY}
-          variant="check"
-        />
-      ) : null}
-      {isWhiteKingInCheck ? (
-        <HighLight
-          key={`${whiteX}-${whiteY}-${isWhiteKingInCheck}`}
-          x={whiteX}
-          y={whiteY}
-          variant="check"
-        />
-      ) : null}
-      {isBlackKingInCheck ? (
-        <HighLight key={`${blackX}-${blackY}`} x={blackX} y={blackY} />
-      ) : null}
-      {highlightedCoordinates?.map(({ x, y }) => (
-        <HighLight key={`${x}-${y}`} x={x} y={y} />
-      ))}
-      {availableMoves?.map((m) => (
-        <HighLight
-          key={`${getCoordinates(m).x}-${getCoordinates(m).y}`}
-          x={getCoordinates(m).x}
-          y={getCoordinates(m).y}
-          variant={
-            position.find((cell) => cell.square === m)
-              ? 'availableCapture'
-              : 'availableMove'
-          }
-        />
-      ))}
-      {moves?.map((m) => (
-        <HighLight key={`${m.x}-${m.y}`} x={m.x} y={m.y} variant="newMove" />
-      ))}
-      {history
-        ?.at(-1)
-        ?.coordinates?.map(({ x, y }) => (
-          <HighLight key={`${x}-${y}`} x={x} y={y} variant="move" />
-        ))}
-      {activeCoordinates ? (
-        <HighLight
-          key={`${activeCoordinates.x}-${activeCoordinates.y}`}
-          x={activeCoordinates.x}
-          y={activeCoordinates.y}
-          variant="move"
-        />
-      ) : null}
+      {lastMove.map(({ x, y }) => {
+        const c = toDisplay(x, y)
+        return <HighLight key={`last-${x}-${y}`} x={c.x} y={c.y} variant="move" />
+      })}
+      {checkHighlights.map(({ x, y }) => {
+        const c = toDisplay(x, y)
+        return <HighLight key={`check-${x}-${y}`} x={c.x} y={c.y} variant="check" />
+      })}
+      {highlightedCoordinates?.map(({ x, y }) => {
+        const c = toDisplay(x, y)
+        return <HighLight key={`${x}-${y}`} x={c.x} y={c.y} />
+      })}
+      {availableMoves?.map((m) => {
+        const mCoord = getCoordinates(m)
+        const c = toDisplay(mCoord.x, mCoord.y)
+        return (
+          <HighLight
+            key={`${mCoord.x}-${mCoord.y}`}
+            x={c.x}
+            y={c.y}
+            variant={
+              position.find((cell) => cell.square === m)
+                ? 'availableCapture'
+                : 'availableMove'
+            }
+          />
+        )
+      })}
+      {activeCoordinates
+        ? (() => {
+            const c = toDisplay(activeCoordinates.x, activeCoordinates.y)
+            return (
+              <HighLight
+                key={`${activeCoordinates.x}-${activeCoordinates.y}`}
+                x={c.x}
+                y={c.y}
+                variant="move"
+              />
+            )
+          })()
+        : null}
     </>
   )
 }

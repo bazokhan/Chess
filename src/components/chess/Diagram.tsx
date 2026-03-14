@@ -1,5 +1,4 @@
-import { useDisclosure } from 'hooks/useDisclosure'
-import { FC } from 'react'
+import { FC, useMemo, useState } from 'react'
 import { TPiece, TSquare } from 'types/Chess'
 import { TCell, TreeItem } from 'types/Chess'
 import { TPlayer } from 'types/Chess'
@@ -21,17 +20,6 @@ type DiagramProps = {
   calculateFor: TPlayer
 }
 
-const COLOR = [
-  'border-red-700',
-  'border-orange-700',
-  'border-yellow-700',
-  'border-green-700',
-  'border-blue-700',
-  'border-purple-700',
-  'border-pink-700',
-  'border-teal-700',
-  'border-brown-700'
-]
 export const Diagram: FC<DiagramProps> = ({
   turn,
   position,
@@ -44,81 +32,88 @@ export const Diagram: FC<DiagramProps> = ({
   bestScore,
   calculateFor
 }) => {
-  const { isOpen, onToggle } = useDisclosure(active)
-  const tree =
-    next
-      ?.map((p) => ({
-        ...p,
-        evaluation: p.position ? evaluatePosition(p.position) : 0
+  const [isOpen, setIsOpen] = useState(Boolean(active))
+  const tree = useMemo(() => {
+    const source =
+      next ??
+      (depth > 0
+        ? generatePositionsTree(turn, position, Math.min(2, depth))
+        : [])
+    const enriched = source
+      .map((branch) => ({
+        ...branch,
+        evaluation: branch.position ? evaluatePosition(branch.position) : 0
       }))
-      .sort((a, b) => b.evaluation - a.evaluation)
-      .slice(0, 3) ??
-    (depth || isOpen
-      ? generatePositionsTree(turn, position, depth)
-          .map((p) => ({
-            ...p,
-            evaluation: p.position ? evaluatePosition(p.position) : 0
-          }))
-          .sort((a, b) => b.evaluation - a.evaluation)
-          .slice(0, 3)
-      : [])
+      .sort((a, b) =>
+        turn === 'w' ? b.evaluation - a.evaluation : a.evaluation - b.evaluation
+      )
+      .slice(0, 4)
+    return enriched
+  }, [depth, next, position, turn])
 
-  const pointEval = evaluatePosition(position)
-  const isLastStep = !tree.length
-  const pointAsParentEval = isLastStep
-    ? pointEval
-    : turn === 'w'
-    ? Math.max(...tree.map((b) => b.evaluation))
-    : Math.min(...tree.map((b) => b.evaluation))
-
+  const pointEval = useMemo(() => evaluatePosition(position), [position])
+  const bestChildEval = tree.length
+    ? turn === 'w'
+      ? Math.max(...tree.map((b) => b.evaluation))
+      : Math.min(...tree.map((b) => b.evaluation))
+    : null
+  const effectiveBest = bestChildEval ?? pointEval
   const isBetterOrEqual =
-    calculateFor === 'w'
-      ? pointAsParentEval >= bestScore
-      : pointAsParentEval <= bestScore
+    calculateFor === 'w' ? effectiveBest >= bestScore : effectiveBest <= bestScore
   const best =
     calculateFor === 'w'
-      ? Math.max(pointAsParentEval, bestScore)
-      : Math.min(pointAsParentEval, bestScore)
+      ? Math.max(effectiveBest, bestScore)
+      : Math.min(effectiveBest, bestScore)
+  const moveLabel = piece && move ? `${piece}${move}` : 'root'
 
   return (
-    <div className="flex flex-col items-center justify-start overflow-auto">
+    <div className="w-full">
       <button
-        className={`flex h-[48px] w-[48px] flex-col items-center justify-center rounded-full border-2 ${
-          isOpen ? 'bg-red-100' : isBetterOrEqual ? 'bg-green-400' : ''
-        } ${turn === 'b' ? 'text-white' : 'text-black'} p-2 font-black ${
-          // *** turn is reversed because this step represent the previous move by the opposite player
-          // i.e. turn toggles after each move, but we are still evaluating this position
-          // so if white palyed, then position is for white's move, but turn in memory now is black
-          COLOR[index % COLOR.length]
+        className={`w-full rounded-md border px-2 py-2 text-left text-xs ${
+          isBetterOrEqual
+            ? 'border-green-600 bg-green-900/30 text-green-100'
+            : 'border-[#5f5a50] bg-[#2f2d29] text-[#e7dfcf]'
         }`}
-        onClick={onToggle}
+        onClick={() => setIsOpen((v) => !v)}
       >
-        <p className="text-xs font-normal">
-          {piece}
-          {move}
-        </p>
-        <p className="text-xs">{pointEval}</p>
-        <p className="text-xs">{pointAsParentEval}</p>
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-semibold uppercase tracking-[0.08em]">{moveLabel}</span>
+          <span>{isOpen ? 'Hide' : 'Show'}</span>
+        </div>
+        <div className="mt-1 grid grid-cols-3 gap-1 text-[10px]">
+          <span className="rounded border border-[#645f56] bg-[#393631] px-1 py-[2px]">
+            Eval: {pointEval}
+          </span>
+          <span className="rounded border border-[#645f56] bg-[#393631] px-1 py-[2px]">
+            BestChild: {bestChildEval ?? '--'}
+          </span>
+          <span className="rounded border border-[#645f56] bg-[#393631] px-1 py-[2px]">
+            Turn: {turn === 'w' ? 'White' : 'Black'}
+          </span>
+        </div>
       </button>
-      {isLastStep ? null : (
-        <div className="m-auto h-[10px] w-[4px] bg-red-600" />
-      )}
-      <div className="flex flex-wrap items-start justify-center">
-        {tree.map((branch) =>
-          branch.position ? (
-            <Diagram
-              key={branch.move}
-              turn={turn === 'w' ? 'b' : 'w'}
-              position={branch.position}
-              piece={branch.piece.piece}
-              move={branch.move}
-              depth={0}
-              next={branch.next}
-              index={index + 1}
-              bestScore={best}
-              calculateFor={calculateFor}
-            />
-          ) : null
+      <div className={`mt-2 space-y-2 ${isOpen ? 'block' : 'hidden'}`}>
+        {tree.length ? (
+          tree.map((branch) =>
+            branch.position ? (
+              <div key={`${branch.piece.square}-${branch.move}`} className="ml-3 border-l border-[#575148] pl-2">
+                <Diagram
+                  turn={turn === 'w' ? 'b' : 'w'}
+                  position={branch.position}
+                  piece={branch.piece.piece}
+                  move={branch.move}
+                  depth={Math.max(0, depth - 1)}
+                  next={branch.next}
+                  index={index + 1}
+                  bestScore={best}
+                  calculateFor={calculateFor}
+                  active={false}
+                />
+              </div>
+            ) : null
+          )
+        ) : (
+          <p className="text-[11px] text-[#a89f8f]">Leaf node</p>
         )}
       </div>
     </div>

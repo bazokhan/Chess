@@ -1,6 +1,7 @@
 import { TCell, TreeItem } from 'types/Chess'
 import { evaluatePosition } from './evaluation'
 import { TPlayer } from 'types/Chess'
+import { endSpan, startSpan } from './telemetry'
 
 export const minimax = ({
   index,
@@ -9,7 +10,8 @@ export const minimax = ({
   alpha,
   beta,
   player,
-  version = 2
+  version = 2,
+  withTelemetry = false
 }: {
   index: number
   tree: TreeItem
@@ -18,11 +20,20 @@ export const minimax = ({
   beta: number
   player: TPlayer
   version: number
+  withTelemetry?: boolean
 }) => {
+  const span = withTelemetry && index === 0 && depth >= 2
+    ? startSpan('minimax.branchEvaluation', {
+        depth,
+        player,
+        version
+      })
+    : null
   const children = tree.next ?? []
   if (depth <= 0 || !children.length) {
     const evaluation = evaluatePosition(tree?.position as TCell[])
     const res = player === 'w' ? evaluation : -evaluation
+    endSpan(span)
     return res
   }
 
@@ -36,7 +47,8 @@ export const minimax = ({
       alpha,
       beta,
       player: player === 'w' ? 'b' : 'w',
-      version
+      version,
+      withTelemetry
     })
     if (player === 'w') {
       maxEval = Math.max(maxEval, nextEval)
@@ -51,8 +63,10 @@ export const minimax = ({
     }
   }
   if (player === 'w') {
+    endSpan(span)
     return maxEval
   } else {
+    endSpan(span)
     return minEval
   }
 }

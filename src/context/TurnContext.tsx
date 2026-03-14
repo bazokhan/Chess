@@ -22,7 +22,7 @@ export const useTurnContext = () => useContext(TurnContext)
 
 export const TurnProvider: FC<PropsWithChildren> = ({ children }) => {
   const [turn, setTurn] = useState<TPlayer>(initialTurn ?? 'w')
-  const toggleTurn = () => setTurn(turn === 'w' ? 'b' : 'w')
+  const toggleTurn = () => setTurn((prev) => (prev === 'w' ? 'b' : 'w'))
 
   return (
     <TurnContext.Provider

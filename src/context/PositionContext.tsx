@@ -20,10 +20,13 @@ import {
 import { encodeFenPosition } from 'controller/chess/fen'
 import { initialPosition } from 'data/normalInitialPosition'
 import { isWhite } from 'controller/chess/isWhite'
-import { initPosition } from 'data/initPosition'
+import { defaultPuzzleFen, initPosition, standardFen } from 'data/initPosition'
 import { TSquare } from 'types/Chess'
 import { encodePgn } from 'controller/chess/pgn'
 import { getMoves } from 'controller/chess/moves'
+import { parseFenPosition } from 'controller/chess/fen'
+import { playMoveSound } from 'controller/chess/sound'
+import { loadBoardPreferences } from 'controller/chess/boardPreferences'
 
 type MovePieceArgs = {
   cell: TCell
@@ -33,9 +36,11 @@ type MovePieceArgs = {
   skipToggleTurn?: boolean
 }
 
+type MovePieceResult = Promise<{ success: boolean; position: TCell[] }>
+
 type PositionContextValue = {
   position: TCell[]
-  movePieceToCoordinate: (args: MovePieceArgs) => void
+  movePieceToCoordinate: (args: MovePieceArgs) => MovePieceResult
   history: HistoryItem[]
   animate: AnimationRecord
   moveBackInHistory: () => void
@@ -53,6 +58,10 @@ type PositionContextValue = {
   promotionType: TPromotion
   hPosition: TPosition
   resetPosition: () => void
+  resetToCurrentSetup: () => void
+  resetToStandardGame: () => void
+  loadFenPosition: (fen: string) => void
+  currentSetupFen: string
   fen: string
   whiteMoves: string[]
   blackMoves: string[]
@@ -60,7 +69,7 @@ type PositionContextValue = {
 
 const PositionContext = createContext<PositionContextValue>({
   position: initialPosition,
-  movePieceToCoordinate: () => {},
+  movePieceToCoordinate: async () => ({ success: false, position: initialPosition }),
   history: [],
   animate: {},
   moveBackInHistory: () => {},
@@ -78,6 +87,10 @@ const PositionContext = createContext<PositionContextValue>({
   promotionType: 'Q',
   hPosition: {} as TPosition,
   resetPosition: () => {},
+  resetToCurrentSetup: () => {},
+  resetToStandardGame: () => {},
+  loadFenPosition: () => {},
+  currentSetupFen: defaultPuzzleFen,
   fen: encodeFenPosition(initialPosition, 'w'),
   whiteMoves: [],
   blackMoves: []
@@ -91,14 +104,38 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
   const [pgn, setPgn] = useState<string[]>([])
   const [animate, setAnimate] = useState<AnimationRecord>({})
   const [promotionType, setPromotionType] = useState<TPromotion>('Q')
+  const [currentSetupFen, setCurrentSetupFen] = useState(defaultPuzzleFen)
 
-  const resetPosition = () => {
-    setPosition(initPosition)
+  const { turn, toggleTurn, setTurn } = useTurnContext()
+
+  const clearTransientState = () => {
     setHistory([])
     setPgn([])
+    setAnimate({})
   }
 
-  const { turn, toggleTurn } = useTurnContext()
+  const loadFenPosition = (fen: string) => {
+    setCurrentSetupFen(fen)
+    setPosition(parseFenPosition(fen))
+    setTurn((fen.split(' ')[1] ?? 'w') as 'w' | 'b')
+    clearTransientState()
+  }
+
+  const resetToCurrentSetup = () => {
+    setPosition(parseFenPosition(currentSetupFen))
+    setTurn((currentSetupFen.split(' ')[1] ?? 'w') as 'w' | 'b')
+    clearTransientState()
+  }
+
+  const resetToStandardGame = () => {
+    setCurrentSetupFen(standardFen)
+    setPosition(parseFenPosition(standardFen))
+    setTurn('w')
+    clearTransientState()
+  }
+
+  const resetPosition = resetToCurrentSetup
+
   const tween = async (
     cellsAndMoves: [TCell, [TCoordinate, TCoordinate]][]
   ) => {
@@ -168,6 +205,10 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
           : [])
       ])
       if (!skipAnimation) {
+        const speed = loadBoardPreferences().animationSpeed
+        if (speed !== 1) {
+          // Runtime animation speed preference is honored in piece transitions.
+        }
         await tween(
           moves.map((m) => [
             hPosition[m.slice(0, 2) as TSquare],
@@ -176,6 +217,7 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
         )
       }
       setPosition(newPosition)
+      playMoveSound('castle')
       if (!skipToggleTurn) {
         toggleTurn()
       }
@@ -203,6 +245,24 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
         await tween([[cell, parseFenMove(move)]])
       }
       setPosition(newPosition)
+      const isCapture = Boolean(hPosition[coordinate])
+      const isPromotion =
+        (cell.piece === 'wp' && coordinate[1] === '8') ||
+        (cell.piece === 'bp' && coordinate[1] === '1')
+      const checkOnOpponent = getIsKingChecked({
+        position: hash(newPosition),
+        pieces: newPosition.filter((p) => p.piece[0] === cell.piece[0]),
+        king: newPosition.find((p) => p.piece === `${cell.piece[0] === 'w' ? 'b' : 'w'}k`) as TCell
+      })
+      if (isPromotion) {
+        playMoveSound('promotion')
+      } else if (checkOnOpponent) {
+        playMoveSound('check')
+      } else if (isCapture) {
+        playMoveSound('capture')
+      } else {
+        playMoveSound('move')
+      }
       if (!skipToggleTurn) {
         toggleTurn()
       }
@@ -316,6 +376,10 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
         setPromotionType,
         hPosition,
         resetPosition,
+        resetToCurrentSetup,
+        resetToStandardGame,
+        loadFenPosition,
+        currentSetupFen,
         fen,
         whiteMoves,
         blackMoves

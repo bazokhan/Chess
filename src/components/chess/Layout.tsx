@@ -1,15 +1,30 @@
 import { usePositionContext } from 'context/PositionContext'
 import { useTurnContext } from 'context/TurnContext'
-import { FC, PropsWithChildren, useState } from 'react'
 import {
-  LuChevronLast,
-  LuChevronFirst,
-  LuChevronRight,
-  LuChevronLeft,
-  LuStopCircle,
-  LuRedo
-} from 'react-icons/lu'
-import { FaChessPawn } from 'react-icons/fa'
+  cloneElement,
+  FC,
+  isValidElement,
+  PropsWithChildren,
+  ReactElement,
+  useEffect,
+  useMemo,
+  useState
+} from 'react'
+import {
+  Bot,
+  ChevronLeft,
+  ChevronRight,
+  FlipVertical2,
+  Repeat,
+  Play,
+  RotateCcw,
+  ScrollText,
+  Settings2,
+  Sparkles,
+  Square,
+  Swords,
+  X
+} from 'lucide-react'
 import {
   evaluatePosition,
   generateAllNextMoves,
@@ -17,22 +32,65 @@ import {
   printMoves
 } from 'controller/chess/evaluation'
 import { useDebugContext } from 'context/DebugContext'
-import EvalBar from './EvalBar'
-import { useDisclosure } from 'hooks/useDisclosure'
-import { Switch } from '../ui/Switch'
+import { useBoardContext } from 'context/BoardContext'
 import { Paragraph } from '../ui/Paragraph'
 import { GameLayout } from 'components/layouts/GameLayout'
 import { Column } from '../layouts/Column'
 import { SimpleBoard } from './SimpleBoard'
-import { TSquare } from 'types/Chess'
-import { TreeItem } from 'types/Chess'
+import { TSquare, TPlayer, TreeItem } from 'types/Chess'
 import { MinimalBoard } from './MinimalBoard'
 import { getCoordinates } from 'controller/chess/coordinates'
 import { Diagram } from './Diagram'
+import { puzzles } from 'data/puzzles'
+import { formatTelemetryEventsText, TelemetryEvent } from 'controller/chess/telemetry'
+import { BoardTheme, PieceTheme } from 'controller/chess/boardPreferences'
 
 type Analysis = 'single_board' | 'board_tree' | 'tree_diagram' | 'none'
+type ConfirmAction = 'current' | 'standard' | null
 
 const filterAnalysis = false
+
+type SideDockProps = {
+  player: TPlayer
+  score: number
+  aiOn: boolean
+  isTurn: boolean
+  onToggleAi: () => void
+}
+
+const SideDock: FC<SideDockProps> = ({
+  player,
+  score,
+  aiOn,
+  isTurn,
+  onToggleAi
+}) => (
+  <div
+    className={`flex items-center justify-between rounded-lg border px-3 py-2 ${
+      isTurn ? 'border-[#b39d72] bg-[#4f4738]' : 'border-[#5f5a50] bg-[#36342f]'
+    }`}
+  >
+    <div className="flex items-center gap-2">
+      <span
+        className={`h-3 w-3 rounded-full ${
+          player === 'w' ? 'bg-white ring-1 ring-black/20' : 'bg-black ring-1 ring-white/30'
+        }`}
+      />
+      <span className="text-sm font-semibold text-[#ece3d2]">
+        {player === 'w' ? 'White' : 'Black'} ({score})
+      </span>
+    </div>
+    <button
+      type="button"
+      className={`chess-overlay-btn ${aiOn ? 'chess-overlay-btn-active' : ''}`}
+      onClick={onToggleAi}
+      title={`Toggle AI for ${player === 'w' ? 'white' : 'black'} side`}
+    >
+      <Bot className="h-4 w-4" />
+    </button>
+  </div>
+)
+
 export const Layout: FC<PropsWithChildren> = ({ children }) => {
   const {
     moveBackInHistory,
@@ -47,33 +105,54 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
     isBlackKingCheckMated,
     isWhiteKingStaleMated,
     isBlackKingStaleMated,
-    resetPosition,
-    fen
+    resetToCurrentSetup,
+    resetToStandardGame,
+    loadFenPosition,
+    currentSetupFen
   } = usePositionContext()
 
   const { turn } = useTurnContext()
-
   const {
-    setTurnToBlack,
-    setTurnToWhite,
     setForceStop,
     aiStopped,
     aiPlayers,
-    aiPlayBlack,
-    aiPlayWhite,
-    aiPlayBoth,
+    toggleAiPlayer,
+    setTurnToWhite,
+    setTurnToBlack,
+    telemetryEvents,
+    clearTelemetry,
+    telemetryPaused,
+    toggleTelemetryPaused,
+    engineMode,
+    setEngineMode,
     tree
-  } = useDebugContext()
+  } =
+    useDebugContext()
 
-  const { isOpen: isSnackbarOpen, onToggle: onSnackbarToggle } = useDisclosure()
+  const [analysisMode, setAnalysisMode] = useState<Analysis>('single_board')
+  const [orientation, setOrientation] = useState<TPlayer>('w')
+  const [isLogsOpen, setIsLogsOpen] = useState(false)
+  const [isAnalysisOpen, setIsAnalysisOpen] = useState(false)
+  const [isPuzzleModalOpen, setIsPuzzleModalOpen] = useState(false)
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null)
+  const [telemetryExpanded, setTelemetryExpanded] = useState(false)
+  const [showBoardTools, setShowBoardTools] = useState(false)
+  const {
+    clearAnnotations,
+    removeLastAnnotation,
+    preferences,
+    updatePreferences
+  } = useBoardContext()
+
   const next = tree.map((p) => ({
     ...p,
     evaluation: evaluatePosition(p.position ?? [])
   }))
+
   const filteredNext = !filterAnalysis
     ? next
     : Object.values(
-        next?.reduce(
+        next.reduce(
           (acc, current) => {
             const prevEval =
               acc[current.move]?.evaluation ??
@@ -89,279 +168,921 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
           {} as Record<TSquare, TreeItem & { evaluation?: number }>
         )
       )
-  const [analysisMode, setAnalysisMode] = useState<Analysis>('single_board')
 
-  const { isOpen, onToggle } = useDisclosure(true)
+  const possibleMoves = useMemo(
+    () => printMoves(generateAllNextMoves(turn, position)),
+    [position, turn]
+  )
+
+  const gameNotifications = useMemo(
+    () =>
+      [
+        isWhiteKingCheckMated ? `CHECKMATE - Black wins` : '',
+        isBlackKingCheckMated ? `CHECKMATE - White wins` : '',
+        isWhiteKingStaleMated || isBlackKingStaleMated ? `STALEMATE - Draw` : '',
+        isWhiteKingInCheck ? `White king in check` : '',
+        isBlackKingInCheck ? `Black king in check` : ''
+      ].filter(Boolean),
+    [
+      isBlackKingCheckMated,
+      isBlackKingInCheck,
+      isBlackKingStaleMated,
+      isWhiteKingCheckMated,
+      isWhiteKingInCheck,
+      isWhiteKingStaleMated
+    ]
+  )
+
+  const topPuzzles = useMemo(
+    () => [...puzzles].sort((a, b) => b.rating - a.rating).slice(0, 40),
+    []
+  )
+
+  const selectedPuzzleId = useMemo(
+    () => puzzles.find((p) => p.fen === currentSetupFen)?.id ?? '',
+    [currentSetupFen]
+  )
+
+  const telemetrySummary = useMemo(() => {
+    const latestStep = telemetryEvents.find((event) => event.type === 'step')
+    const spanEvents = telemetryEvents.filter((event) => event.type === 'span')
+    const average =
+      telemetryEvents.length > 0
+        ? telemetryEvents.reduce((acc, event) => acc + event.durationMs, 0) /
+          telemetryEvents.length
+        : 0
+    const slowest = spanEvents.reduce<TelemetryEvent | null>(
+      (acc, event) => (!acc || event.durationMs > acc.durationMs ? event : acc),
+      null
+    )
+    const hotspots = [...spanEvents]
+      .sort((a, b) => b.durationMs - a.durationMs)
+      .slice(0, 5)
+    const latestTraceId =
+      (telemetryEvents.find((event) => event.meta?.traceId)?.meta?.traceId as
+        | string
+        | undefined) ?? ''
+    const traceEvents = latestTraceId
+      ? telemetryEvents
+          .filter((event) => event.meta?.traceId === latestTraceId)
+          .sort((a, b) => a.timestamp - b.timestamp)
+      : []
+    const latestEngineMetrics = telemetryEvents.find(
+      (event) => event.name === 'engine.bitboard.metrics'
+    )
+    return {
+      latestStep,
+      average,
+      slowest,
+      hotspots,
+      latestTraceId,
+      traceEvents,
+      latestEngineMetrics
+    }
+  }, [telemetryEvents])
+
+  const pvCandidates = useMemo(
+    () =>
+      [...(filteredNext as (TreeItem & { evaluation?: number })[])]
+        .sort((a, b) =>
+          turn === 'w'
+            ? (b.evaluation ?? -Infinity) - (a.evaluation ?? -Infinity)
+            : (a.evaluation ?? Infinity) - (b.evaluation ?? Infinity)
+        )
+        .slice(0, 5),
+    [filteredNext, turn]
+  )
+
+  const evalTrend = useMemo(() => {
+    const recent = history.slice(-10)
+    return recent.map((item) => {
+      const whiteMove = `${item.oldCell.square}${item.newCell.square}`
+      return {
+        move: whiteMove,
+        score: evaluatePosition(position)
+      }
+    })
+  }, [history, position])
+
+  const boardChild = isValidElement(children)
+    ? cloneElement(children as ReactElement<{ orientation?: TPlayer }>, {
+        orientation
+      })
+    : children
+
+  const topPlayer = orientation === 'w' ? 'b' : 'w'
+  const bottomPlayer = orientation === 'w' ? 'w' : 'b'
+
+  const toggleAi = (player: TPlayer) => {
+    toggleAiPlayer(player)
+  }
+
+  const runConfirmAction = () => {
+    if (confirmAction === 'current') {
+      setForceStop(true)
+      resetToCurrentSetup()
+    }
+    if (confirmAction === 'standard') {
+      setForceStop(true)
+      resetToStandardGame()
+    }
+    setConfirmAction(null)
+  }
+
+  const passTurn = () => {
+    if (turn === 'w') {
+      setTurnToBlack()
+    } else {
+      setTurnToWhite()
+    }
+  }
+
+  const exportTelemetry = () => {
+    const text = formatTelemetryEventsText(telemetryEvents)
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = `telemetry-${new Date().toISOString().replace(/[:.]/g, '-')}.txt`
+    anchor.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const renderAnalysis = () => {
+    if (analysisMode === 'none') {
+      return (
+        <Paragraph className="text-[#b8b2a7]">
+          Analysis hidden. Pick a tab to inspect candidate lines.
+        </Paragraph>
+      )
+    }
+    if (analysisMode === 'single_board') {
+      return (
+        <SimpleBoard
+          position={position}
+          key={turn}
+          evaluation={evaluatePosition(position)}
+          next={filteredNext}
+        />
+      )
+    }
+    if (analysisMode === 'board_tree') {
+      return (
+        <div className="grid max-h-[420px] grid-cols-1 gap-2 overflow-auto md:grid-cols-2">
+          {tree.map((branch) => (
+            <div className="flex flex-col gap-1" key={branch.move}>
+              <MinimalBoard
+                position={branch.position}
+                from={getCoordinates(branch.piece.square)}
+                to={getCoordinates(branch.move)}
+              />
+              <p className="text-xs text-[#d8d2c7]">
+                {branch.piece.piece}
+                {branch.move}, evaluation: {evaluatePosition(branch.position ?? [])}
+              </p>
+            </div>
+          ))}
+        </div>
+      )
+    }
+    return (
+      <Diagram
+        position={position}
+        turn={turn}
+        depth={3}
+        calculateFor="w"
+        bestScore={-Infinity}
+      />
+    )
+  }
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const desktop = window.matchMedia('(min-width: 1280px)')
+    const syncDesktopPanels = () => {
+      if (desktop.matches) {
+        setIsLogsOpen(true)
+        setIsAnalysisOpen(true)
+      }
+    }
+    syncDesktopPanels()
+    desktop.addEventListener('change', syncDesktopPanels)
+    return () => desktop.removeEventListener('change', syncDesktopPanels)
+  }, [])
 
   return (
     <GameLayout>
-      {isSnackbarOpen ? (
-        <Column>
-          <EvalBar fen={fen} />
-        </Column>
-      ) : null}
-      <Column>
-        <div className="btn-group">
-          <Switch className="w-full" onClick={onToggle} active={false}>
-            Toggle Details
-          </Switch>
+      <div className="flex h-full w-full flex-col overflow-hidden pb-16 sm:pb-0">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <div>
+            <p className="text-xs uppercase tracking-[0.16em] text-[#beb9b1]">Chess</p>
+            <p className="text-xl font-black text-white md:text-2xl">Playground</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="chess-overlay-btn"
+              onClick={() => setIsLogsOpen((v) => !v)}
+              title="Toggle left logs drawer"
+            >
+              <ScrollText className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              className="chess-overlay-btn"
+              onClick={() => setIsAnalysisOpen((v) => !v)}
+              title="Toggle right analysis drawer"
+            >
+              <Sparkles className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              className="chess-overlay-btn"
+              onClick={() => setIsPuzzleModalOpen(true)}
+              title="Open puzzle chooser"
+            >
+              <Settings2 className="h-4 w-4" />
+            </button>
+          </div>
         </div>
-        {children}
-      </Column>
-      {isOpen ? (
-        <>
-          <Column width={500}>
-            <p className="title">Analysis</p>
+
+        <div className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[300px_minmax(0,1fr)_360px]">
+          <div className="hidden min-h-0 xl:block">
+            <Column className="h-full min-h-0 overflow-hidden">
+              <p className="title m-0">Logs</p>
+              <p className="text-xs text-[#bfb8ab]">PGN</p>
+              <div className="max-h-[120px] overflow-y-auto">
+                <Paragraph className="text-xs">
+                  {pgn.length ? pgn.map((item) => <p key={item}>{item}</p>) : 'No moves yet'}
+                </Paragraph>
+              </div>
+              <p className="mt-2 text-xs text-[#bfb8ab]">Possible moves</p>
+              <div className="max-h-[120px] overflow-y-auto rounded-lg border border-[#57534c] bg-[#302f2b] p-2">
+                {possibleMoves.length ? (
+                  possibleMoves.map((text) => (
+                    <p key={text} className="m-0 w-full px-1 py-0 text-xs text-[#d9d3c7]">
+                      {text}
+                    </p>
+                  ))
+                ) : (
+                  <p className="text-xs text-[#a39d91]">No generated move list.</p>
+                )}
+              </div>
+              <p className="title">Notifications</p>
+              <Paragraph className="text-sm text-[#ffcece]">
+                {gameNotifications.length
+                  ? gameNotifications.map((notification) => (
+                      <span key={notification} className="mr-2 inline-block">
+                        {notification}
+                      </span>
+                    ))
+                  : 'No alerts'}
+              </Paragraph>
+
+              <div className="mt-3 border-t border-[#59544b] pt-2">
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="title m-0">Engine Telemetry</p>
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      className="chess-overlay-btn !p-1 text-[10px]"
+                      onClick={() =>
+                        setEngineMode(engineMode === 'bitboard' ? 'legacy' : 'bitboard')
+                      }
+                      title="Toggle active engine mode"
+                    >
+                      {engineMode === 'bitboard' ? 'Bitboard' : 'Legacy'}
+                    </button>
+                    <button
+                      type="button"
+                      className="chess-overlay-btn !p-1 text-[10px]"
+                      onClick={toggleTelemetryPaused}
+                      title="Pause or resume telemetry capture"
+                    >
+                      {telemetryPaused ? 'Resume' : 'Pause'}
+                    </button>
+                    <button
+                      type="button"
+                      className="chess-overlay-btn !p-1 text-[10px]"
+                      onClick={clearTelemetry}
+                      title="Clear telemetry events"
+                    >
+                      Clear
+                    </button>
+                    <button
+                      type="button"
+                      className="chess-overlay-btn !p-1 text-[10px]"
+                      onClick={() => setTelemetryExpanded((v) => !v)}
+                      title="Toggle compact/expanded telemetry view"
+                    >
+                      {telemetryExpanded ? 'Compact' : 'Expand'}
+                    </button>
+                    <button
+                      type="button"
+                      className="chess-overlay-btn !p-1 text-[10px]"
+                      onClick={exportTelemetry}
+                      title="Export all telemetry as text"
+                    >
+                      Export
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mb-2 grid grid-cols-2 gap-1 text-[11px]">
+                  <div className="rounded border border-[#57534b] bg-[#2f2d29] p-1">
+                    Engine mode: <span className="font-bold uppercase">{engineMode}</span>
+                  </div>
+                  <div className="rounded border border-[#57534b] bg-[#2f2d29] p-1">
+                    Nodes/sec:{' '}
+                    <span className="font-bold">
+                      {telemetrySummary.latestEngineMetrics?.meta?.nps ?? '--'}
+                    </span>
+                  </div>
+                  <div className="rounded border border-[#57534b] bg-[#2f2d29] p-1">
+                    Depth:{' '}
+                    <span className="font-bold">
+                      {telemetrySummary.latestEngineMetrics?.meta?.depthReached ?? '--'}
+                    </span>
+                  </div>
+                  <div className="rounded border border-[#57534b] bg-[#2f2d29] p-1">
+                    TT hit rate:{' '}
+                    <span className="font-bold">
+                      {telemetrySummary.latestEngineMetrics?.meta?.ttHitRate ?? '--'}%
+                    </span>
+                  </div>
+                  <div className="rounded border border-[#57534b] bg-[#2f2d29] p-1">
+                    Latest step:{' '}
+                    <span className="font-bold">
+                      {telemetrySummary.latestStep
+                        ? `${telemetrySummary.latestStep.durationMs.toFixed(1)} ms`
+                        : '--'}
+                    </span>
+                  </div>
+                  <div className="rounded border border-[#57534b] bg-[#2f2d29] p-1">
+                    Avg event:{' '}
+                    <span className="font-bold">
+                      {telemetryEvents.length
+                        ? `${telemetrySummary.average.toFixed(1)} ms`
+                        : '--'}
+                    </span>
+                  </div>
+                  <div className="col-span-2 rounded border border-[#57534b] bg-[#2f2d29] p-1 text-[10px]">
+                    Slowest:{' '}
+                    <span className="font-bold">
+                      {telemetrySummary.slowest
+                        ? `${telemetrySummary.slowest.name} (${telemetrySummary.slowest.durationMs.toFixed(1)} ms)`
+                        : '--'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="max-h-[140px] space-y-1 overflow-y-auto rounded-lg border border-[#57534b] bg-[#262521] p-2">
+                  {(telemetryExpanded
+                    ? telemetryEvents
+                    : telemetryEvents.slice(0, 12)
+                  ).map((event) => (
+                    <div
+                      key={event.id}
+                      className="rounded border border-[#4f4a43] bg-[#312f2a] p-1"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-[11px] text-[#d9d3c7]">
+                          {event.name}
+                        </span>
+                        <span
+                          className={`telemetry-badge telemetry-${event.severity}`}
+                          title={`Duration ${event.durationMs.toFixed(1)} ms`}
+                        >
+                          {event.durationMs.toFixed(1)}ms
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                  {!telemetryEvents.length ? (
+                    <p className="text-[11px] text-[#9c978d]">
+                      No telemetry events yet. Start AI to collect timings.
+                    </p>
+                  ) : null}
+                </div>
+
+                <p className="mt-2 text-[11px] font-semibold text-[#c8c0b3]">
+                  Latest trace hierarchy
+                </p>
+                <div className="max-h-[140px] space-y-1 overflow-y-auto rounded-lg border border-[#57534b] bg-[#262521] p-2">
+                  {telemetrySummary.latestTraceId ? (
+                    telemetrySummary.traceEvents.map((event) => {
+                      const depth = Number(event.meta?.depth ?? 0)
+                      return (
+                        <div
+                          key={`trace-${event.id}`}
+                          className="flex items-center justify-between gap-2 rounded border border-[#4f4a43] bg-[#312f2a] px-2 py-1 text-[11px]"
+                          style={{ marginLeft: `${Math.max(0, depth) * 10}px` }}
+                        >
+                          <span className="truncate text-[#ddd6c9]">
+                            d{depth} {event.name}
+                          </span>
+                          <span className={`telemetry-badge telemetry-${event.severity}`}>
+                            {event.durationMs.toFixed(1)}ms
+                          </span>
+                        </div>
+                      )
+                    })
+                  ) : (
+                    <p className="text-[11px] text-[#9c978d]">
+                      No trace yet. Start AI to see hierarchical call timing.
+                    </p>
+                  )}
+                </div>
+
+                <p className="mt-2 text-[11px] font-semibold text-[#c8c0b3]">
+                  Slowest functions
+                </p>
+                <div className="space-y-1">
+                  {telemetrySummary.hotspots.map((event) => (
+                    <div
+                      key={`hotspot-${event.id}`}
+                      className="flex items-center justify-between rounded border border-[#4d4841] bg-[#2f2d28] px-2 py-1 text-[11px]"
+                    >
+                      <span className="truncate text-[#ddd6c9]">{event.name}</span>
+                      <span className={`telemetry-badge telemetry-${event.severity}`}>
+                        {event.durationMs.toFixed(1)}ms
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Column>
+          </div>
+
+          <div className="min-h-0 w-full overflow-hidden">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <span
+                className={`chess-chip ${
+                  turn === 'w' ? 'bg-[#f4efe3] text-black' : 'bg-[#111] text-white'
+                }`}
+              >
+                Turn: {turn === 'w' ? 'White' : 'Black'}
+              </span>
+              <div className="flex flex-wrap items-center gap-1">
+                <button
+                  type="button"
+                  className="chess-overlay-btn"
+                  onClick={passTurn}
+                  title="Pass turn to the other side"
+                >
+                  <Repeat className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  className="chess-overlay-btn"
+                  onClick={() => setOrientation((o) => (o === 'w' ? 'b' : 'w'))}
+                  title="Flip board orientation"
+                >
+                  <FlipVertical2 className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  className="chess-overlay-btn"
+                  onClick={moveBackInHistory}
+                  disabled={!history.length}
+                  title="Back one move"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  className="chess-overlay-btn"
+                  onClick={moveForwardInHistory}
+                  disabled={!future.length}
+                  title="Forward one move"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  className="chess-overlay-btn"
+                  onClick={() => setConfirmAction('current')}
+                  title="Reset current setup"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  className="chess-overlay-btn"
+                  onClick={() => setConfirmAction('standard')}
+                  title="Reset standard chess"
+                >
+                  <Swords className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  className={`chess-overlay-btn ${aiStopped ? '' : 'chess-overlay-btn-active'}`}
+                  onClick={() => setForceStop(!aiStopped)}
+                  title={aiStopped ? 'Start AI' : 'Stop AI'}
+                >
+                  {aiStopped ? <Play className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="mb-2 flex items-center justify-between gap-2 xl:hidden">
+              <button
+                type="button"
+                className="chess-overlay-btn text-xs"
+                onClick={() => setShowBoardTools((v) => !v)}
+              >
+                {showBoardTools ? 'Hide board tools' : 'Show board tools'}
+              </button>
+            </div>
+
+            <div
+              className={`mb-2 grid grid-cols-2 gap-1 lg:grid-cols-6 ${
+                showBoardTools ? 'grid' : 'hidden'
+              } xl:grid`}
+            >
+              <select
+                className="rounded border border-[#5f5a52] bg-[#2f2d29] px-2 py-1 text-xs text-[#f0e8d7]"
+                value={preferences.boardTheme}
+                onChange={(e) =>
+                  updatePreferences({ boardTheme: e.target.value as BoardTheme })
+                }
+                title="Board color theme"
+              >
+                <option value="classic">Theme: Classic</option>
+                <option value="olive">Theme: Olive</option>
+                <option value="blue">Theme: Blue</option>
+              </select>
+              <select
+                className="rounded border border-[#5f5a52] bg-[#2f2d29] px-2 py-1 text-xs text-[#f0e8d7]"
+                value={preferences.pieceTheme}
+                onChange={(e) =>
+                  updatePreferences({ pieceTheme: e.target.value as PieceTheme })
+                }
+                title="Piece style"
+              >
+                <option value="classic">Pieces: Image Classic</option>
+                <option value="neo">Pieces: Image Neo</option>
+                <option value="icons">Pieces: Icons (analysis set)</option>
+                <option value="glyphs">Pieces: Glyphs (analysis set)</option>
+              </select>
+              <button
+                type="button"
+                className={`chess-overlay-btn justify-start text-xs ${
+                  preferences.moveSounds ? 'chess-overlay-btn-active' : ''
+                }`}
+                onClick={() => updatePreferences({ moveSounds: !preferences.moveSounds })}
+                title="Toggle move sounds"
+              >
+                Sound {preferences.moveSounds ? 'On' : 'Off'}
+              </button>
+              <button
+                type="button"
+                className={`chess-overlay-btn justify-start text-xs ${
+                  preferences.showCoordinates ? 'chess-overlay-btn-active' : ''
+                }`}
+                onClick={() =>
+                  updatePreferences({ showCoordinates: !preferences.showCoordinates })
+                }
+                title="Toggle board coordinates"
+              >
+                Coords {preferences.showCoordinates ? 'On' : 'Off'}
+              </button>
+              <select
+                className="rounded border border-[#5f5a52] bg-[#2f2d29] px-2 py-1 text-xs text-[#f0e8d7]"
+                value={preferences.annotationColor}
+                onChange={(e) =>
+                  updatePreferences({
+                    annotationColor: e.target.value as
+                      | 'green'
+                      | 'red'
+                      | 'blue'
+                      | 'yellow'
+                  })
+                }
+                title="Default right-click annotation color"
+              >
+                <option value="green">Arrow Color: Green</option>
+                <option value="red">Arrow Color: Red</option>
+                <option value="blue">Arrow Color: Blue</option>
+                <option value="yellow">Arrow Color: Yellow</option>
+              </select>
+            </div>
+
+            <div className="mb-2">
+              <SideDock
+                player={topPlayer}
+                score={getPlayerEvaluation(topPlayer, position)}
+                aiOn={aiPlayers.includes(topPlayer)}
+                isTurn={turn === topPlayer}
+                onToggleAi={() => toggleAi(topPlayer)}
+              />
+            </div>
+
+            <div className="mx-auto w-full max-w-[min(92vw,calc(100dvh-260px))] xl:max-w-[min(96vw,76vh)]">
+              {boardChild}
+            </div>
+
+            <div className="mt-2">
+              <SideDock
+                player={bottomPlayer}
+                score={getPlayerEvaluation(bottomPlayer, position)}
+                aiOn={aiPlayers.includes(bottomPlayer)}
+                isTurn={turn === bottomPlayer}
+                onToggleAi={() => toggleAi(bottomPlayer)}
+              />
+            </div>
+          </div>
+
+          <div className="hidden min-h-0 xl:block">
+            <Column className="h-full min-h-0 overflow-hidden">
+              <p className="title m-0">Analysis</p>
+              <div className="mb-2 grid grid-cols-2 gap-1">
+                <button
+                  type="button"
+                  className="chess-overlay-btn !p-1 text-[11px]"
+                  onClick={clearAnnotations}
+                  title="Clear all board annotations"
+                >
+                  Clear all annotations
+                </button>
+                <button
+                  type="button"
+                  className="chess-overlay-btn !p-1 text-[11px]"
+                  onClick={removeLastAnnotation}
+                  title="Undo latest board annotation"
+                >
+                  Undo annotation
+                </button>
+              </div>
+              <div className="btn-group">
+                <button
+                  type="button"
+                  className={`chess-tab ${analysisMode === 'none' ? 'chess-tab-active' : ''}`}
+                  onClick={() => setAnalysisMode('none')}
+                >
+                  None
+                </button>
+                <button
+                  type="button"
+                  className={`chess-tab ${
+                    analysisMode === 'single_board' ? 'chess-tab-active' : ''
+                  }`}
+                  onClick={() => setAnalysisMode('single_board')}
+                >
+                  Single
+                </button>
+                <button
+                  type="button"
+                  className={`chess-tab ${
+                    analysisMode === 'board_tree' ? 'chess-tab-active' : ''
+                  }`}
+                  onClick={() => setAnalysisMode('board_tree')}
+                >
+                  Boards
+                </button>
+                <button
+                  type="button"
+                  className={`chess-tab ${
+                    analysisMode === 'tree_diagram' ? 'chess-tab-active' : ''
+                  }`}
+                  onClick={() => setAnalysisMode('tree_diagram')}
+                >
+                  Diagram
+                </button>
+              </div>
+              <div className="mt-2 rounded border border-[#5e594f] bg-[#2f2d29] p-2">
+                <p className="m-0 text-[11px] font-bold uppercase tracking-[0.08em] text-[#cabfae]">
+                  Principal Variations
+                </p>
+                <div className="mt-1 space-y-1">
+                  {pvCandidates.map((candidate) => (
+                    <p key={`pv-${candidate.piece.square}-${candidate.move}`} className="m-0 text-xs text-[#eee6d5]">
+                      {candidate.piece.square}
+                      {'->'}
+                      {candidate.move} ({(candidate.evaluation ?? 0).toFixed(0)})
+                    </p>
+                  ))}
+                  {!pvCandidates.length ? (
+                    <p className="m-0 text-xs text-[#a79f91]">No candidate lines yet.</p>
+                  ) : null}
+                </div>
+              </div>
+              <div className="mt-2 rounded border border-[#5e594f] bg-[#2f2d29] p-2">
+                <p className="m-0 text-[11px] font-bold uppercase tracking-[0.08em] text-[#cabfae]">
+                  Eval Trend
+                </p>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {evalTrend.map((row) => (
+                    <span
+                      key={`trend-${row.move}-${row.score}`}
+                      className="rounded border border-[#666055] bg-[#37342f] px-1 py-[2px] text-[10px] text-[#eee2ce]"
+                    >
+                      {row.move}:{row.score.toFixed(0)}
+                    </span>
+                  ))}
+                  {!evalTrend.length ? (
+                    <p className="m-0 text-xs text-[#a79f91]">Play moves to build trend.</p>
+                  ) : null}
+                </div>
+              </div>
+              <div className="mt-2 overflow-y-auto xl:max-h-[calc(100vh-230px)]">
+                {renderAnalysis()}
+              </div>
+            </Column>
+          </div>
+        </div>
+
+        {isLogsOpen ? (
+          <div className="fixed inset-x-2 bottom-14 z-40 max-h-[58dvh] overflow-y-auto rounded-lg border border-[#5f5a52] bg-[#2d2c28] p-2 shadow-xl xl:hidden">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="title m-0">Logs</p>
+              <button
+                type="button"
+                className="chess-overlay-btn !p-1 text-[11px]"
+                onClick={() => setIsLogsOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+            <p className="text-xs text-[#bfb8ab]">PGN</p>
+            <div className="max-h-[120px] overflow-y-auto">
+              <Paragraph className="text-xs">
+                {pgn.length ? pgn.map((item) => <p key={item}>{item}</p>) : 'No moves yet'}
+              </Paragraph>
+            </div>
+            <p className="mt-2 text-xs text-[#bfb8ab]">Possible moves</p>
+            <div className="max-h-[120px] overflow-y-auto rounded-lg border border-[#57534c] bg-[#302f2b] p-2">
+              {possibleMoves.length ? (
+                possibleMoves.map((text) => (
+                  <p key={text} className="m-0 w-full px-1 py-0 text-xs text-[#d9d3c7]">
+                    {text}
+                  </p>
+                ))
+              ) : (
+                <p className="text-xs text-[#a39d91]">No generated move list.</p>
+              )}
+            </div>
+          </div>
+        ) : null}
+
+        {isAnalysisOpen ? (
+          <div className="fixed inset-x-2 bottom-14 z-40 max-h-[58dvh] overflow-y-auto rounded-lg border border-[#5f5a52] bg-[#2d2c28] p-2 shadow-xl xl:hidden">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="title m-0">Analysis</p>
+              <button
+                type="button"
+                className="chess-overlay-btn !p-1 text-[11px]"
+                onClick={() => setIsAnalysisOpen(false)}
+              >
+                Close
+              </button>
+            </div>
             <div className="btn-group">
-              <Switch
-                className="w-full"
+              <button
+                type="button"
+                className={`chess-tab ${analysisMode === 'none' ? 'chess-tab-active' : ''}`}
                 onClick={() => setAnalysisMode('none')}
-                disabled={analysisMode === 'none'}
-                active={analysisMode === 'none'}
               >
                 None
-              </Switch>
-              <Switch
-                className="w-full"
+              </button>
+              <button
+                type="button"
+                className={`chess-tab ${
+                  analysisMode === 'single_board' ? 'chess-tab-active' : ''
+                }`}
                 onClick={() => setAnalysisMode('single_board')}
-                disabled={analysisMode === 'single_board'}
-                active={analysisMode === 'single_board'}
               >
                 Single
-              </Switch>
-              <Switch
-                className="w-full"
+              </button>
+              <button
+                type="button"
+                className={`chess-tab ${
+                  analysisMode === 'board_tree' ? 'chess-tab-active' : ''
+                }`}
                 onClick={() => setAnalysisMode('board_tree')}
-                disabled={analysisMode === 'board_tree'}
-                active={analysisMode === 'board_tree'}
               >
                 Boards
-              </Switch>
-              <Switch
-                className="w-full"
+              </button>
+              <button
+                type="button"
+                className={`chess-tab ${
+                  analysisMode === 'tree_diagram' ? 'chess-tab-active' : ''
+                }`}
                 onClick={() => setAnalysisMode('tree_diagram')}
-                disabled={analysisMode === 'tree_diagram'}
-                active={analysisMode === 'tree_diagram'}
               >
                 Diagram
-              </Switch>
+              </button>
             </div>
-            {analysisMode === 'single_board' ? (
-              <SimpleBoard
-                position={position}
-                key={turn}
-                evaluation={evaluatePosition(position)}
-                next={filteredNext}
-              />
-            ) : null}
-            {analysisMode === 'board_tree' ? (
-              <div className="grid max-h-[400px] grid-cols-2 gap-2 overflow-auto">
-                {tree.map((branch) => (
-                  <div className="flex flex-col gap-1" key={branch.move}>
-                    <MinimalBoard
-                      position={branch.position}
-                      from={getCoordinates(branch.piece.square)}
-                      to={getCoordinates(branch.move)}
-                    />
-                    <p>
-                      {branch.piece.piece}
-                      {branch.move}, evaluation:{' '}
-                      {evaluatePosition(branch.position ?? [])}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-            {analysisMode === 'tree_diagram' ? (
-              <Diagram
-                position={position}
-                turn={turn}
-                depth={3}
-                calculateFor="w"
-                bestScore={-Infinity}
-              />
-            ) : null}
-            <p className="title">Evaluation bar</p>
-            <Switch active={isSnackbarOpen} onClick={onSnackbarToggle}>
-              {isSnackbarOpen ? 'Disable' : 'Enable'} Eval Bar{' '}
-              <span className="ml-4 text-xs font-normal">
-                It&apos;s currently {isSnackbarOpen ? 'enabled' : 'disabled'}
-              </span>
-            </Switch>
-            <p className="title">Turn</p>
-            <div className="btn-group">
-              <Switch
-                className="w-full"
-                onClick={setTurnToBlack}
-                disabled={turn === 'b'}
-                active={turn === 'b'}
-              >
-                <FaChessPawn className="text-black" />
-                <span className="ml-4 text-black">
-                  {turn === 'b' ? 'Black to play' : 'Switch turn to Black'}
-                </span>
-              </Switch>
-              <Switch
-                className="w-full"
-                onClick={setTurnToWhite}
-                disabled={turn === 'w'}
-                active={turn === 'w'}
-              >
-                <FaChessPawn className="text-white" />
-                <span className="ml-4 text-white">
-                  {turn === 'w' ? 'White to play' : 'Switch turn to White'}
-                </span>
-              </Switch>
-            </div>
-            <p className="title">Computer play as</p>
-            <div className="btn-group">
-              <Switch
-                className="w-full"
-                onClick={aiPlayBlack}
-                disabled={aiPlayers.includes('b') && aiPlayers.length === 1}
-                active={aiPlayers.includes('b') && aiPlayers.length === 1}
-              >
-                <FaChessPawn className="text-black" />
-                <span className="ml-4 text-black">Black</span>
-              </Switch>
-              <Switch
-                className="w-full"
-                onClick={aiPlayWhite}
-                disabled={aiPlayers.includes('w') && aiPlayers.length === 1}
-                active={aiPlayers.includes('w') && aiPlayers.length === 1}
-              >
-                <FaChessPawn className="text-white" />
-                <span className="ml-4 text-white">White</span>
-              </Switch>
-              <Switch
-                className="w-full"
-                onClick={aiPlayBoth}
-                disabled={aiPlayers.length === 2}
-                active={aiPlayers.length === 2}
-              >
-                <FaChessPawn className="text-gray-500" />
-                <span className="ml-4 text-gray-500">Both</span>
-              </Switch>
-            </div>
-            <div className="btn-group">
-              <Switch
-                className="w-full justify-center"
-                onClick={() => {
-                  setForceStop(true)
-                  resetPosition()
-                }}
-                active={aiStopped && position.every((m) => !m.moved)}
-                disabled={aiStopped && position.every((m) => !m.moved)}
-                hideCheck
-                title="reset"
-              >
-                <LuRedo />
-              </Switch>
-              <Switch
-                className="w-full justify-center"
-                onClick={() => setForceStop(true)}
-                active={aiStopped}
-                disabled={aiStopped}
-                hideCheck
-                title="stop ai"
-              >
-                <LuStopCircle />
-              </Switch>
-              <Switch
-                className="w-full justify-center"
-                onClick={() => {
-                  setAnalysisMode('none')
-                  setForceStop(false)
-                }}
-                active={!aiStopped}
-                disabled={!aiStopped}
-                hideCheck
-                title="start ai"
-              >
-                <LuChevronRight />
-              </Switch>
-            </div>
-            <p className="title">History</p>
-            <div className="btn-group">
-              <Switch
-                hideCheck
-                className="w-full justify-center"
-                active={false}
-                disabled
-              >
-                <LuChevronFirst />
-              </Switch>
-              <Switch
-                hideCheck
-                className="w-full justify-center"
-                onClick={moveBackInHistory}
-                disabled={!history.length}
-                active={!!future.length}
-              >
-                <LuChevronLeft />
-              </Switch>
-              <Switch
-                hideCheck
-                className="w-full justify-center"
-                onClick={moveForwardInHistory}
-                disabled={!future.length}
-                active={!!history.length}
-              >
-                <LuChevronRight />
-              </Switch>
-              <Switch
-                hideCheck
-                className="w-full justify-center"
-                active={false}
-                disabled
-              >
-                <LuChevronLast />
-              </Switch>
-            </div>
-          </Column>
-          <Column width={300}>
-            <p className="title">PGN</p>
-            <div className="h-[150px] overflow-y-auto">
-              <Paragraph className="h-full text-sm font-light text-white">
-                {pgn?.map((item) => <p key={item}>{item}</p>)}
-              </Paragraph>
-            </div>
-            <p className="title">Game notifications</p>
-            <Paragraph className="min-h-[60px] w-full p-2 text-center font-black text-red-200">
-              {isWhiteKingCheckMated ? `CHECKMATE - Black Wins!` : null}
-              {isBlackKingCheckMated ? `CHECKMATE - White Wins!` : null}
-              {isWhiteKingStaleMated || isBlackKingStaleMated
-                ? `STALEMATE - Draw!`
-                : null}
-              {isWhiteKingInCheck ? `White King Is In Check!` : null}
-              {isBlackKingInCheck ? `Black King Is In Check!` : null}
-            </Paragraph>
+            <div className="mt-2">{renderAnalysis()}</div>
+          </div>
+        ) : null}
 
-            <p className="title">Possible moves</p>
-            <div className="h-[150px] overflow-y-auto">
-              {printMoves(generateAllNextMoves(turn, position)).map((text) => (
-                <p key={text} className="m-0 w-full px-2 py-0 text-xs">
-                  {text}
-                </p>
-              ))}
-            </div>
-            <p className="title">Piece Evaluation</p>
-            <div className="btn-group">
-              <Paragraph className="w-full text-center text-white">
-                {getPlayerEvaluation('w', position)}
-              </Paragraph>
-              <Paragraph className="w-full text-center text-black">
-                {getPlayerEvaluation('b', position)}
-              </Paragraph>
-            </div>
-            <p className="title">History</p>
-            <Paragraph>
-              Move {history.length ?? 0} /{' '}
-              {(future.length ?? 0) + (history.length ?? 0)}
-            </Paragraph>
-          </Column>
-        </>
-      ) : null}
+        <div className="fixed inset-x-2 bottom-2 z-40 flex gap-1 rounded-lg border border-[#5f5a52] bg-[#2d2c28] p-1 sm:hidden">
+          <button
+            type="button"
+            className="chess-overlay-btn flex-1"
+            onClick={() => setIsLogsOpen((v) => !v)}
+            title="Toggle logs"
+          >
+            <ScrollText className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            className="chess-overlay-btn flex-1"
+            onClick={() => setIsAnalysisOpen((v) => !v)}
+            title="Toggle analysis"
+          >
+            <Sparkles className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            className="chess-overlay-btn flex-1"
+            onClick={() => setIsPuzzleModalOpen(true)}
+            title="Open puzzles"
+          >
+            <Settings2 className="h-4 w-4" />
+          </button>
+        </div>
+
+        {isPuzzleModalOpen ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3">
+            <button
+              type="button"
+              className="absolute inset-0 bg-black/45"
+              onClick={() => setIsPuzzleModalOpen(false)}
+              aria-label="Close puzzle modal backdrop"
+            />
+            <Column className="relative z-10 w-full max-w-[560px]">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="m-0 text-lg font-black text-white">Choose Puzzle</p>
+                <button
+                  type="button"
+                  className="chess-overlay-btn"
+                  onClick={() => setIsPuzzleModalOpen(false)}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <select
+                className="w-full rounded-lg border border-[#5f5a52] bg-[#2f2d29] p-2 text-sm text-[#f0e8d7]"
+                value={selectedPuzzleId}
+                onChange={(e) => {
+                  const selected = topPuzzles.find((p) => p.id === e.target.value)
+                  if (!selected) return
+                  setForceStop(true)
+                  loadFenPosition(selected.fen)
+                }}
+              >
+                <option value="" disabled>
+                  Select puzzle...
+                </option>
+                {topPuzzles.map((puzzle) => (
+                  <option key={`${puzzle.source}-${puzzle.id}`} value={puzzle.id}>
+                    {puzzle.source === 'mateIn1' ? 'Mate in 1' : 'Mate in 2'} #{puzzle.id} -
+                    Rating {puzzle.rating}
+                  </option>
+                ))}
+              </select>
+            </Column>
+          </div>
+        ) : null}
+
+        {confirmAction ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3">
+            <button
+              type="button"
+              className="absolute inset-0 bg-black/45"
+              onClick={() => setConfirmAction(null)}
+              aria-label="Close confirmation backdrop"
+            />
+            <Column className="relative z-10 w-full max-w-[460px]">
+              <p className="m-0 text-lg font-black text-white">Confirm Reset</p>
+              <p className="mt-2 text-sm text-[#d6cfbf]">
+                {confirmAction === 'current'
+                  ? 'Reset board to current puzzle/setup and clear move history?'
+                  : 'Reset board to standard chess initial position and clear move history?'}
+              </p>
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  className="chess-overlay-btn w-full"
+                  onClick={() => setConfirmAction(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="chess-overlay-btn chess-overlay-btn-active w-full"
+                  onClick={runConfirmAction}
+                >
+                  Confirm
+                </button>
+              </div>
+            </Column>
+          </div>
+        ) : null}
+      </div>
     </GameLayout>
   )
 }
+

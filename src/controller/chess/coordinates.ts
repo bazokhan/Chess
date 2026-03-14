@@ -1,5 +1,6 @@
 import { TSquare } from 'types/Chess'
 import { TCoordinate } from 'types/Chess'
+import { TPlayer } from 'types/Chess'
 
 const fileToIndexMap: { [key: string]: number } = {
   a: 0,
@@ -31,4 +32,20 @@ export const getIndex = (square: TSquare) => {
 
 export const getSquare = (coordinate: TCoordinate): TSquare => {
   return (indexToFileArray[coordinate.x] + (8 - coordinate.y)) as TSquare
+}
+
+export const getDisplayCoordinate = (
+  coordinate: TCoordinate,
+  orientation: TPlayer = 'w'
+) => {
+  if (orientation === 'w') return coordinate
+  return { x: 7 - coordinate.x, y: 7 - coordinate.y }
+}
+
+export const getLogicalCoordinate = (
+  coordinate: TCoordinate,
+  orientation: TPlayer = 'w'
+) => {
+  if (orientation === 'w') return coordinate
+  return { x: 7 - coordinate.x, y: 7 - coordinate.y }
 }

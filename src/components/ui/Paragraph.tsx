@@ -1,13 +1,15 @@
-import { FC, PropsWithChildren } from 'react'
+import { FC, HTMLAttributes, PropsWithChildren } from 'react'
 
-export const Paragraph: FC<PropsWithChildren & { className?: string }> = ({
+export const Paragraph: FC<
+  PropsWithChildren & HTMLAttributes<HTMLParagraphElement> & { className?: string }
+> = ({
   children,
   className,
   ...props
 }) => {
   return (
     <p
-      className={`rounded-md border-b-2 border-black bg-[#41403d] p-4 font-black text-opacity-80 transition-all hover:bg-[#4c4b47] ${className}`}
+      className={`rounded-lg border border-[#5b5750] bg-[#3f3d38] p-3 text-sm font-semibold text-[#ddd8ce] transition-colors hover:bg-[#535046] ${className}`}
       {...props}
     >
       {children}

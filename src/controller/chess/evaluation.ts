@@ -5,6 +5,7 @@ import { fileLog } from '../shared/fileLog'
 import { TPlayer } from 'types/Chess'
 import { getCheckMate, getIsKingCheckMated } from './checks'
 import { TSquare } from 'types/Chess'
+import { endSpan, startSpan } from './telemetry'
 // import proximityTable from '../../../data_sets/proximityTable.json'
 
 const WEIGHTS = {
@@ -199,9 +200,26 @@ export const generatePositionsTree = (
   position: TCell[],
   depth: number,
   log = false,
-  withEvaluation = false
+  withEvaluation = false,
+  withTelemetry = false,
+  telemetry?: {
+    traceId?: string
+    parentSpanId?: number
+    depthLevel?: number
+  }
 ): TreeItem[] => {
   if (!depth) return []
+  const span = withTelemetry
+    ? startSpan('generatePositionsTree', {
+        depth,
+        turn
+      },
+      {
+        traceId: telemetry?.traceId,
+        parentSpanId: telemetry?.parentSpanId,
+        depth: telemetry?.depthLevel
+      })
+    : null
   const nextMoves = generateAllNextMoves(turn, position)
   const start = Date.now()
   let result = nextMoves
@@ -218,7 +236,13 @@ export const generatePositionsTree = (
             newPosition,
             depth - 1,
             false,
-            withEvaluation
+            withEvaluation,
+            withTelemetry,
+            {
+              traceId: telemetry?.traceId,
+              parentSpanId: span?.spanId,
+              depthLevel: (telemetry?.depthLevel ?? 0) + 1
+            }
           )
         }
       })
@@ -239,6 +263,9 @@ export const generatePositionsTree = (
       'generatePositionsTree',
       `generation took ${end - start} ms and yielded ${result.length} positions`
     )
+  }
+  if (withTelemetry) {
+    endSpan(span)
   }
   return result as TreeItem[]
 }

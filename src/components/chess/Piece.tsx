@@ -1,93 +1,131 @@
-import br from 'assets/chess_pieces/br.png'
-import bn from 'assets/chess_pieces/bn.png'
-import bb from 'assets/chess_pieces/bb.png'
-import bq from 'assets/chess_pieces/bq.png'
-import bk from 'assets/chess_pieces/bk.png'
-import bp from 'assets/chess_pieces/bp.png'
-import wr from 'assets/chess_pieces/wr.png'
-import wn from 'assets/chess_pieces/wn.png'
-import wb from 'assets/chess_pieces/wb.png'
-import wq from 'assets/chess_pieces/wq.png'
-import wk from 'assets/chess_pieces/wk.png'
-import wp from 'assets/chess_pieces/wp.png'
-
-import { FC, MouseEventHandler, useCallback, useMemo } from 'react'
+import { FC, MouseEventHandler, useCallback, useMemo, useRef } from 'react'
 import { useBoardContext } from 'context/BoardContext'
 import { TCell } from 'types/Chess'
-import { getCoordinates } from 'controller/chess/coordinates'
+import {
+  getCoordinates,
+  getDisplayCoordinate
+} from 'controller/chess/coordinates'
 import { usePositionContext } from 'context/PositionContext'
 import { ANIMATION_DURATION } from 'controller/chess/constants'
-
-const pieceImages = {
-  br: br,
-  bn: bn,
-  bb: bb,
-  bq: bq,
-  bk: bk,
-  bp: bp,
-  wr: wr,
-  wn: wn,
-  wb: wb,
-  wq: wq,
-  wk: wk,
-  wp: wp
-}
+import { TPlayer } from 'types/Chess'
+import { renderPieceSet } from './pieceSet'
 
 type PieceProps = {
   cell: TCell
+  orientation: TPlayer
 }
 
 // #eb6150  /80
 // #ffff33  /50
 
-export const Piece: FC<PieceProps> = ({ cell }) => {
-  const { activeCell, setActiveCell } = useBoardContext()
-  const { animate, future } = usePositionContext()
+export const Piece: FC<PieceProps> = ({ cell, orientation }) => {
+  const {
+    activeCell,
+    setActiveCell,
+    availableMoves,
+    startDrag,
+    dragState,
+    preferences
+  } = useBoardContext()
+  const { animate, future, isWhiteKingCheckMated, isBlackKingCheckMated } =
+    usePositionContext()
   const isActive = activeCell?.square === cell.square
   const isAnimated = animate[cell.square]?.cell.square === cell.square
+  const suppressNextClickRef = useRef(false)
+  const isCheckmatedKing =
+    (cell.piece === 'wk' && isWhiteKingCheckMated) ||
+    (cell.piece === 'bk' && isBlackKingCheckMated)
 
-  const { x, y } = getCoordinates(cell.square)
+  const logicalCoordinates = getCoordinates(cell.square)
 
   const onToggle: MouseEventHandler = useCallback(
     (e) => {
-      if (!isActive && activeCell) {
+      if (suppressNextClickRef.current) {
+        suppressNextClickRef.current = false
+        e.stopPropagation()
         return
       }
-
-      e.stopPropagation()
-
       if (isActive) {
+        e.stopPropagation()
         setActiveCell(null)
-      } else {
-        setActiveCell(cell)
+        return
       }
+      // If another piece is active and this is a valid capture target, let board handle it
+      if (activeCell && availableMoves.includes(cell.square)) {
+        return
+      }
+      // Switch selection to this piece
+      e.stopPropagation()
+      setActiveCell(cell)
     },
-    [activeCell, cell, isActive, setActiveCell]
+    [activeCell, availableMoves, cell, isActive, setActiveCell]
   )
 
-  const currentX = useMemo(() => {
-    if (!isAnimated) return x
-    return animate[cell.square]?.move?.[1]?.x ?? 0
-  }, [animate, cell.square, isAnimated, x])
+  const displayCoordinates = useMemo(() => {
+    const currentCoordinates = isAnimated
+      ? {
+          x: animate[cell.square]?.move?.[1]?.x ?? 0,
+          y: animate[cell.square]?.move?.[1]?.y ?? 0
+        }
+      : logicalCoordinates
+    return getDisplayCoordinate(currentCoordinates, orientation)
+  }, [animate, cell.square, isAnimated, logicalCoordinates.x, logicalCoordinates.y, orientation])
 
-  const currentY = useMemo(() => {
-    if (!isAnimated) return y
-    return animate[cell.square]?.move?.[1]?.y ?? 0
-  }, [animate, cell.square, isAnimated, y])
+  const onPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (future?.length) return
+      if (e.button !== 0) return
+      // If another piece is active and this is a valid capture target, let click/board handle it
+      if (activeCell && availableMoves.includes(cell.square)) return
+      e.stopPropagation()
+      suppressNextClickRef.current = true
+      setActiveCell(cell)
+      startDrag({
+        cell,
+        pointerId: e.pointerId,
+        clientX: e.clientX,
+        clientY: e.clientY
+      })
+    },
+    [activeCell, availableMoves, cell, future?.length, setActiveCell, startDrag]
+  )
+
+  const isDragging = dragState.active && dragState.fromCell?.square === cell.square
 
   return (
     <div
       className={`absolute ${
         isActive ? 'z-30' : 'z-20'
-      }  h-[12.5%] w-[12.5%] cursor-grab`}
+      } h-[12.5%] w-[12.5%] cursor-grab touch-none`}
       style={{
-        top: `${currentY * 12.5}%`,
-        left: `${currentX * 12.5}%`,
-        transition: `all ${ANIMATION_DURATION}ms`
+        top: `${displayCoordinates.y * 12.5}%`,
+        left: `${displayCoordinates.x * 12.5}%`,
+        transition: isDragging ? 'none' : `all ${ANIMATION_DURATION / preferences.animationSpeed}ms`,
+        opacity: isDragging ? 0 : 1
       }}
       onClick={future?.length ? undefined : onToggle}
+      onPointerDown={onPointerDown}
     >
-      <img className="h-full w-full" src={pieceImages[cell.piece]} />
+      <div
+        className={`relative h-full w-full ${
+          isCheckmatedKing ? 'rotate-[14deg] scale-[0.93]' : ''
+        }`}
+      >
+        {renderPieceSet(
+          cell.piece,
+          preferences.pieceTheme,
+          `h-full w-full select-none ${isCheckmatedKing ? 'opacity-85' : ''}`
+        )}
+        {isCheckmatedKing ? (
+          <span
+            className="pointer-events-none absolute -right-1 -top-1 inline-flex h-5 w-5 items-center justify-center rounded-full border border-red-300 bg-red-600 text-[11px] font-black text-white shadow-[0_2px_8px_rgba(0,0,0,0.35)]"
+            title="Checkmate"
+            aria-label="Checkmate"
+          >
+            ✕
+          </span>
+        ) : null}
+      </div>
     </div>
   )
 }

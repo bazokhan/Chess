@@ -2,6 +2,7 @@ import { FC } from 'react'
 import { HighLight } from './Highlight'
 import { TCell, TCoordinate } from 'types/Chess'
 import { getCoordinates } from 'controller/chess/coordinates'
+import { SimplePiece } from './SimplePiece'
 
 type MinimalBoardProps = {
   from?: TCoordinate
@@ -9,21 +10,6 @@ type MinimalBoardProps = {
   position?: TCell[]
   darkColor?: string
   lightColor?: string
-}
-
-const icons = {
-  br: '♜',
-  bn: '♞',
-  bb: '♝',
-  bq: '♛',
-  bk: '♚',
-  bp: '♟',
-  wr: '♖',
-  wn: '♘',
-  wb: '♗',
-  wq: '♕',
-  wk: '♔',
-  wp: '♙'
 }
 
 export const MinimalBoard: FC<MinimalBoardProps> = ({
@@ -71,13 +57,7 @@ export const MinimalBoard: FC<MinimalBoardProps> = ({
               left: `${coordinate.x * 12.5}%`
             }}
           >
-            <div
-              className={`flex h-full w-full cursor-grab items-center justify-center p-1 ${
-                cell.piece.startsWith('w') ? 'text-white' : 'text-black'
-              }`}
-            >
-              {icons[cell.piece]}
-            </div>
+            <SimplePiece cell={cell} />
           </div>
         )
       })}
