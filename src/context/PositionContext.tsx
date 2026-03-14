@@ -25,21 +25,17 @@ import { TSquare } from 'types/Chess'
 import { encodePgn } from 'controller/chess/pgn'
 import { getMoves } from 'controller/chess/moves'
 
-const PositionContext = createContext<{
+type MovePieceArgs = {
+  cell: TCell
+  coordinate: TSquare
+  skipHistory?: boolean
+  skipAnimation?: boolean
+  skipToggleTurn?: boolean
+}
+
+type PositionContextValue = {
   position: TCell[]
-  movePieceToCoordinate: ({
-    cell,
-    coordinate,
-    skipHistory = false,
-    skipAnimation = false,
-    skipToggleTurn = false
-  }: {
-    cell: TCell
-    coordinate: TSquare
-    skipHistory?: boolean
-    skipAnimation?: boolean
-    skipToggleTurn?: boolean
-  }) => void
+  movePieceToCoordinate: (args: MovePieceArgs) => void
   history: HistoryItem[]
   animate: AnimationRecord
   moveBackInHistory: () => void
@@ -60,7 +56,9 @@ const PositionContext = createContext<{
   fen: string
   whiteMoves: string[]
   blackMoves: string[]
-}>({
+}
+
+const PositionContext = createContext<PositionContextValue>({
   position: initialPosition,
   movePieceToCoordinate: () => {},
   history: [],

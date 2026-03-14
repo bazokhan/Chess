@@ -1,5 +1,6 @@
 # Required steps before running
 
+- Create a folder at the root called "logs". It's ignored in git.
 - Create a folder at the root called "data_sets". It's ignored in git.
 - Run "pnpm run hashing" to generate proximityTable.json inside data_sets
 

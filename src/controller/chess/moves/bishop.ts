@@ -7,28 +7,29 @@ export const getBishopAvailableMoves = ({
   position
 }: {
   piece: TCell
-  position: TPosition
+  position: Partial<TPosition>
 }) => {
   const { x, y } = getCoordinates(piece.square)
   const moves: TSquare[] = []
-  ;[
+  const directions = [
     [-1, -1],
     [1, 1],
     [-1, 1],
     [1, -1]
-  ].forEach(([xDirection, yDirection]) => {
-    for (let delta = 1; delta <= 8; delta += 1) {
+  ]
+
+  directions.forEach(([xDirection, yDirection]) => {
+    for (let delta = 1; delta < 8; delta++) {
       const newX = x + delta * xDirection
       const newY = y + delta * yDirection
-      if (newX < 0 || newX > 7 || newY < 0 || newY > 7) continue
+      if (newX < 0 || newX > 7 || newY < 0 || newY > 7) break
       const square = (String.fromCharCode(
         piece.square.charCodeAt(0) + delta * xDirection
       ) +
         (8 - newY)) as TSquare
       const targetPiece = position[square]
-      const isSamePlayer = targetPiece?.piece[0] === piece.piece[0]
       if (targetPiece) {
-        if (!isSamePlayer) {
+        if (targetPiece.piece[0] !== piece.piece[0]) {
           moves.push(square)
         }
         break
