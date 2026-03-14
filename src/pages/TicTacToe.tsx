@@ -2,6 +2,7 @@ import { TicTacToe } from 'classes/TickTacToe'
 import { Column } from 'components/layouts/Column'
 import { GameLayout } from 'components/layouts/GameLayout'
 import { Paragraph } from 'components/ui/Paragraph'
+import { Seo } from 'components/Seo'
 import { Dispatch, FC, SetStateAction, useEffect, useMemo, useState } from 'react'
 import { Subject } from 'rxjs'
 import loldoll from 'assets/tictactoe/loldoll.png'
@@ -133,6 +134,12 @@ export const TicTacToePage: FC = () => {
 
   return (
     <GameLayout>
+      <Seo
+        title="TicTacToe Playground | Fun AI Sandbox"
+        description="Play TicTacToe with customizable pieces and AI modes in a colorful sandbox for quick game loop and search experiments."
+        path="/tictactoe"
+        keywords="tictactoe, minimax, game ai, board game sandbox, interactive game"
+      />
       <div className="grid h-full min-h-0 w-full gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(390px,1fr)]">
         <Column className="relative h-full min-h-0 overflow-hidden border-[#8657c8] bg-[linear-gradient(180deg,#ffe6fb_0%,#f6f0ff_58%,#dcf9ff_100%)] px-4 pt-10 text-[#3e2e56] md:px-6">
           <div className="absolute left-2 top-2 rotate-[-10deg] rounded-full bg-[#ff9fda] px-4 py-1 text-xs font-black uppercase tracking-[0.1em] text-[#5a2155] shadow-md">

@@ -4,8 +4,8 @@ A board-games playground centered on a chess engine I originally wrote years ago
 now rewritten with a modern bitboards approach.
 
 This repository is where I keep evolving the engine architecture, testing
-algorithms, and exposing smaller interactive demos (like TicTacToe and minimax
-exploration) that help validate ideas quickly.
+algorithms, and exposing smaller interactive demos that help validate ideas
+quickly.
 
 ## Engine story
 
@@ -21,7 +21,6 @@ exploration) that help validate ideas quickly.
 - `/` Home page with project context and navigation.
 - `/chess` Main chess playground (board interaction, analysis views, telemetry,
   and engine mode switching).
-- `/minimax` Minimax-focused experimentation page.
 - `/tictactoe` Small game sandbox for quick AI/algorithm feedback loops.
 
 ## Tech stack
@@ -78,7 +77,6 @@ Open <http://localhost:5173>.
 
 ## Notes
 
-- The minimax page can be computationally heavy depending on current settings.
 - This project intentionally combines product-like UI with algorithm
   experimentation.
 

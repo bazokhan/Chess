@@ -1,37 +1,19 @@
 import { Column } from 'components/layouts/Column'
 import { ScrollLayout } from 'components/layouts/ScrollLayout'
 import { Paragraph } from 'components/ui/Paragraph'
-import { Cpu, ExternalLink, Gamepad2, Rocket, Sparkles } from 'lucide-react'
+import { Seo } from 'components/Seo'
+import { ExternalLink, Sparkles, Sword } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import wk from 'assets/chess_pieces/wk.png'
-import bk from 'assets/chess_pieces/bk.png'
-import wq from 'assets/chess_pieces/wq.png'
-import bq from 'assets/chess_pieces/bq.png'
-import loldoll from 'assets/tictactoe/loldoll.png'
-import minecraftsupersword from 'assets/tictactoe/mcsword.png'
-
-const internalPages = [
-  {
-    to: '/chess',
-    title: 'Chess Playground',
-    description:
-      'Play the full board, switch engines, inspect telemetry, run puzzles, and test evaluation/analysis tools.'
-  },
-  {
-    to: '/minimax',
-    title: 'MiniMax Explorer',
-    description:
-      'Visual experimentation area for search trees and position scoring. Useful for algorithm reasoning and debugging.'
-  },
-  {
-    to: '/tictactoe',
-    title: 'TicTacToe',
-    description:
-      'Small game sandbox where the AI choices stay easy to inspect. A compact page for game loop and minimax basics.'
-  }
-]
+import heroImage from 'assets/home/chess-hero.jpg'
 
 const projects = [
+  {
+    href: 'https://mo-baz.com',
+    title: 'mo-baz.com',
+    subtitle: 'Mohamed Elbaz - Software Developer & Product Builder',
+    description:
+      'Personal website with professional profiles, selected products/prototypes, and portfolio links across web, games, tooling, and AI projects.'
+  },
   {
     href: 'https://my-game-engine-zeta.vercel.app/',
     title: 'MyGameEngine',
@@ -48,50 +30,16 @@ const projects = [
   }
 ]
 
-const visualCards = [
-  {
-    title: 'Legacy Engine',
-    subtitle: 'Original architecture',
-    image: bq
-  },
-  {
-    title: 'Bitboards Engine',
-    subtitle: 'Current optimization path',
-    image: wq
-  },
-  {
-    title: 'Algorithm Sandbox',
-    subtitle: 'MiniMax and game tree experiments',
-    image: minecraftsupersword
-  },
-  {
-    title: 'Small Games',
-    subtitle: 'TicTacToe and playful prototypes',
-    image: loldoll
-  }
-]
-
-const timeline = [
-  {
-    icon: <Gamepad2 className="h-4 w-4" />,
-    title: 'Legacy Era',
-    text: 'First chess engine experiments from years ago, focused on learning move generation and search fundamentals.'
-  },
-  {
-    icon: <Cpu className="h-4 w-4" />,
-    title: 'Bitboards Rewrite',
-    text: 'Modernized engine representation and optimization path for faster analysis, cleaner architecture, and better tooling.'
-  },
-  {
-    icon: <Rocket className="h-4 w-4" />,
-    title: 'Playground Mode',
-    text: 'Ongoing iteration using pages for chess, minimax, and smaller games to validate ideas with visible feedback.'
-  }
-]
-
 export const HomePage = () => {
   return (
     <ScrollLayout>
+      <Seo
+        title="Chess Engine Playground | Legacy to Bitboards"
+        description="A board games playground focused on a chess engine rewrite from legacy architecture to bitboards, with interactive chess and TicTacToe pages."
+        path="/"
+        image={heroImage}
+        keywords="chess engine, bitboards, chess ai, algorithms, game development, tictactoe"
+      />
       <div className="w-full space-y-4 pb-6">
         <Column className="home-hero-shell relative overflow-hidden">
           <div className="home-grid-overlay" />
@@ -102,86 +50,56 @@ export const HomePage = () => {
                 Chess engine evolution, from legacy logic to bitboards
               </h1>
               <Paragraph>
-                This project started years ago as my first chess engine. I rewrote it
-                with a bitboards approach to unlock better performance, cleaner
-                modeling, and deeper experimentation.
+                This project began as an older chess engine implementation and was
+                rewritten with bitboards to improve performance and architecture.
               </Paragraph>
               <Paragraph>
-                The engine is still evolving. I keep improving search, evaluation, and
-                tooling while using this app as a practical playground for board-game
-                ideas and algorithms.
+                It remains an active playground for engine development, evaluation
+                tuning, and algorithm experimentation.
               </Paragraph>
-              <div className="flex flex-wrap gap-2">
-                <Link to="/chess" className="chess-overlay-btn">
-                  Enter chess lab
+              <div className="mt-2 flex flex-col gap-2 md:flex-row md:items-center">
+                <Link to="/chess" className="home-primary-cta">
+                  <Sword className="h-5 w-5" />
+                  Open Chess Playground
                 </Link>
-                <Link to="/minimax" className="chess-overlay-btn">
-                  Open minimax room
-                </Link>
-                <Link to="/tictactoe" className="chess-overlay-btn">
+                <Link to="/tictactoe" className="home-secondary-cta">
                   Open TicTacToe
                 </Link>
               </div>
             </div>
-            <div className="home-hero-visual-grid" aria-hidden>
-              <div className="home-hero-image-card home-hero-image-card-main">
-                <img src={wk} alt="White king piece" className="home-hero-piece-image" />
-              </div>
-              <div className="home-hero-image-card home-hero-image-card-alt">
-                <img src={bk} alt="Black king piece" className="home-hero-piece-image" />
-              </div>
-              <div className="home-hero-image-card">
-                <img src={wq} alt="White queen piece" className="home-hero-piece-image" />
-              </div>
-              <div className="home-hero-image-card">
-                <img src={bq} alt="Black queen piece" className="home-hero-piece-image" />
+            <div className="home-hero-banner">
+              <img
+                src={heroImage}
+                alt="Chess board and pieces"
+                className="home-hero-banner-image"
+              />
+              <div className="home-hero-banner-overlay">
+                Royalty-free image from Pixabay
               </div>
             </div>
           </div>
         </Column>
 
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          {visualCards.map((item) => (
-            <div key={item.title} className="home-visual-card">
-              <div className="home-visual-image-wrap">
-                <img src={item.image} alt={item.title} className="home-visual-image" />
-              </div>
-              <p className="m-0 text-base font-black text-white">{item.title}</p>
-              <p className="m-0 text-xs uppercase tracking-[0.08em] text-[#c6beaf]">
-                {item.subtitle}
-              </p>
+        <Column className="home-chess-spotlight">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="title m-0 text-[#c4f0ff]">Primary Experience</p>
+              <p className="m-0 text-2xl font-black text-white">Chess Playground</p>
             </div>
-          ))}
-        </div>
-
-        <div className="grid gap-3 lg:grid-cols-3">
-          {timeline.map((step) => (
-            <div key={step.title} className="home-timeline-card">
-              <div className="home-timeline-icon">{step.icon}</div>
-              <p className="m-0 text-base font-black text-white">{step.title}</p>
-              <p className="m-0 text-sm text-[#d4ccbc]">{step.text}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="grid gap-3 xl:grid-cols-3">
-          {internalPages.map((page) => (
-            <Column key={page.to} className="home-nav-card justify-between">
-              <div>
-                <p className="title m-0">Internal page</p>
-                <p className="mt-1 text-lg font-black text-white">{page.title}</p>
-                <p className="mt-1 text-sm text-[#cdc6b8]">{page.description}</p>
-              </div>
-              <Link to={page.to} className="chess-overlay-btn mt-3 w-full">
-                Go to page
-              </Link>
-            </Column>
-          ))}
-        </div>
+            <Link to="/chess" className="home-primary-cta">
+              <Sword className="h-5 w-5" />
+              Launch Chess
+            </Link>
+          </div>
+          <p className="m-0 text-sm text-[#d4eaf6]">
+            Full board experience with engine controls, analysis panes, puzzle loading,
+            and telemetry to inspect performance and search behavior.
+          </p>
+        </Column>
 
         <div className="grid gap-3 xl:grid-cols-[1.2fr_1fr]">
           <Column>
-            <p className="title m-0">Engine and algorithms</p>
+            <p className="title m-0">Project Overview</p>
             <p className="text-xl font-black text-white">What this repo is about</p>
             <Paragraph>
               Main focus: compare and improve two chess engine implementations. The
@@ -189,18 +107,22 @@ export const HomePage = () => {
               engine is the modern rewrite under active optimization.
             </Paragraph>
             <Paragraph>
-              Supporting pages make concepts visible: minimax exploration, board
-              evaluation feedback, move generation checks, and smaller games that keep
-              algorithm experiments fast to iterate.
+              Supporting pages make concepts visible: board evaluation feedback,
+              move generation checks, and smaller games that keep algorithm
+              experiments fast to iterate.
             </Paragraph>
-            <p className="text-xs text-[#b8b1a5]">
-              Tip: use the chess page telemetry and controls to observe engine behavior
-              while changing search scenarios.
-            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Link to="/chess" className="home-secondary-cta">
+                Chess Page
+              </Link>
+              <Link to="/tictactoe" className="home-secondary-cta">
+                TicTacToe Page
+              </Link>
+            </div>
           </Column>
 
           <Column>
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#7b715d] bg-[#3a372f] px-4 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#eadfc9]">
+            <div className="home-accent-pill inline-flex items-center gap-2 rounded-full px-4 py-1 text-xs font-semibold uppercase tracking-[0.14em]">
               <Sparkles className="h-4 w-4" />
               Other Projects
             </div>

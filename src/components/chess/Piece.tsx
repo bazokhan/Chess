@@ -27,10 +27,14 @@ export const Piece: FC<PieceProps> = ({ cell, orientation }) => {
     dragState,
     preferences
   } = useBoardContext()
-  const { animate, future } = usePositionContext()
+  const { animate, future, isWhiteKingCheckMated, isBlackKingCheckMated } =
+    usePositionContext()
   const isActive = activeCell?.square === cell.square
   const isAnimated = animate[cell.square]?.cell.square === cell.square
   const suppressNextClickRef = useRef(false)
+  const isCheckmatedKing =
+    (cell.piece === 'wk' && isWhiteKingCheckMated) ||
+    (cell.piece === 'bk' && isBlackKingCheckMated)
 
   const logicalCoordinates = getCoordinates(cell.square)
 
@@ -102,7 +106,26 @@ export const Piece: FC<PieceProps> = ({ cell, orientation }) => {
       onClick={future?.length ? undefined : onToggle}
       onPointerDown={onPointerDown}
     >
-      {renderPieceSet(cell.piece, preferences.pieceTheme, 'h-full w-full select-none')}
+      <div
+        className={`relative h-full w-full ${
+          isCheckmatedKing ? 'rotate-[14deg] scale-[0.93]' : ''
+        }`}
+      >
+        {renderPieceSet(
+          cell.piece,
+          preferences.pieceTheme,
+          `h-full w-full select-none ${isCheckmatedKing ? 'opacity-85' : ''}`
+        )}
+        {isCheckmatedKing ? (
+          <span
+            className="pointer-events-none absolute -right-1 -top-1 inline-flex h-5 w-5 items-center justify-center rounded-full border border-red-300 bg-red-600 text-[11px] font-black text-white shadow-[0_2px_8px_rgba(0,0,0,0.35)]"
+            title="Checkmate"
+            aria-label="Checkmate"
+          >
+            ✕
+          </span>
+        ) : null}
+      </div>
     </div>
   )
 }
