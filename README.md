@@ -82,6 +82,8 @@ Open <http://localhost:5173>.
 
 ## Other projects
 
+- [mo-baz.com](https://mo-baz.com) - personal site with portfolio links, product
+  experiments, and developer profiles.
 - [MyGameEngine](https://my-game-engine-zeta.vercel.app/) - playful game engine
   lab with multiple experiment modules.
 - [Gamercury Studio](https://gamercury.lovable.app/) - indie portfolio for
