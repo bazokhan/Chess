@@ -201,13 +201,23 @@ export const generatePositionsTree = (
   depth: number,
   log = false,
   withEvaluation = false,
-  withTelemetry = false
+  withTelemetry = false,
+  telemetry?: {
+    traceId?: string
+    parentSpanId?: number
+    depthLevel?: number
+  }
 ): TreeItem[] => {
   if (!depth) return []
   const span = withTelemetry
     ? startSpan('generatePositionsTree', {
         depth,
         turn
+      },
+      {
+        traceId: telemetry?.traceId,
+        parentSpanId: telemetry?.parentSpanId,
+        depth: telemetry?.depthLevel
       })
     : null
   const nextMoves = generateAllNextMoves(turn, position)
@@ -227,7 +237,12 @@ export const generatePositionsTree = (
             depth - 1,
             false,
             withEvaluation,
-            withTelemetry
+            withTelemetry,
+            {
+              traceId: telemetry?.traceId,
+              parentSpanId: span?.spanId,
+              depthLevel: (telemetry?.depthLevel ?? 0) + 1
+            }
           )
         }
       })

@@ -28,6 +28,7 @@ import {
 import {
   TelemetryEvent,
   clearTelemetryEvents,
+  createTraceId,
   endSpan,
   getTelemetryEvents,
   getTelemetryPaused,
@@ -98,15 +99,37 @@ export const aiV3 = (
   playerTurn?: TPlayer
 ) => {
   const turnToPlay = playerTurn ?? turn
-  const treeSpan = startSpan('ai.v3.generateTree', {
-    playerTurn: turnToPlay
-  })
-  const tree = generatePositionsTree(playerTurn ?? turn, position, 3, false, false, true)
+  const traceId = createTraceId('ai-turn')
+  const totalSpan = startSpan(
+    'ai.v3.total',
+    { playerTurn: turnToPlay },
+    { traceId, depth: 0 }
+  )
+  const treeSpan = startSpan(
+    'ai.v3.generateTree',
+    { playerTurn: turnToPlay },
+    { traceId, parentSpanId: totalSpan?.spanId, depth: 1 }
+  )
+  const tree = generatePositionsTree(
+    playerTurn ?? turn,
+    position,
+    3,
+    false,
+    false,
+    true,
+    {
+      traceId,
+      parentSpanId: totalSpan?.spanId,
+      depthLevel: 1
+    }
+  )
   endSpan(treeSpan)
   const evaluation = evaluatePosition(position)
-  const minimaxSpan = startSpan('ai.v3.minimaxSelfEvaluating', {
-    playerTurn: turnToPlay
-  })
+  const minimaxSpan = startSpan(
+    'ai.v3.minimaxSelfEvaluating.root',
+    { playerTurn: turnToPlay },
+    { traceId, parentSpanId: totalSpan?.spanId, depth: 1 }
+  )
   const result = minimaxSelfEvaluating<Partial<TreeItem>, TCell[]>(
     turn,
     {
@@ -119,14 +142,32 @@ export const aiV3 = (
     evaluatePosition,
     -Infinity,
     Infinity,
-    true
+    true,
+    {
+      enabled: true,
+      traceId,
+      parentSpanId: minimaxSpan?.spanId
+    }
   )
   const durationMs = endSpan(minimaxSpan)
+  recordTelemetryStep('ai.turn.decision', durationMs, {
+    traceId,
+    parentSpanId: totalSpan?.spanId,
+    depth: 1,
+    checked,
+    branches: tree.length,
+    playerTurn: turnToPlay,
+    bestMove: `${result.piece?.square ?? ''}${result.move ?? ''}`
+  })
   recordTelemetryStep('ai.v3.summary', durationMs, {
+    traceId,
+    parentSpanId: totalSpan?.spanId,
+    depth: 1,
     checked,
     branches: tree.length,
     playerTurn: turnToPlay
   })
+  endSpan(totalSpan)
   return result
 }
 
@@ -182,7 +223,6 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
     async (playerTurn?: TPlayer, recordHistory?: boolean) => {
       if (forceStop && !playerTurn) return
       if (!aiPlayers.includes(turn)) return
-      const decisionStart = performance.now()
       // let bestMove: TreeItem | null
       // if (playerTurn === 'b') {
       //   bestMove = aiV2(playerTurn)
@@ -190,19 +230,7 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
       //   bestMove = aiV3(playerTurn) as TreeItem | null
       // }
 
-      const aiTotalSpan = startSpan('ai.turn.total', {
-        playerTurn: playerTurn ?? turn
-      })
       const bestMove = aiV3(turn, position, playerTurn) as TreeItem
-      const decisionTime = performance.now() - decisionStart
-      endSpan(aiTotalSpan)
-
-      recordTelemetryStep('ai.turn.decision', decisionTime, {
-        moveNumber: moveNumber + 1,
-        turn: playerTurn ?? turn,
-        bestMove: bestMove ? `${bestMove.piece.square}${bestMove.move}` : 'none',
-        checked
-      })
 
       if (bestMove) {
         await movePieceToCoordinate({

@@ -40,7 +40,7 @@ import { MinimalBoard } from './MinimalBoard'
 import { getCoordinates } from 'controller/chess/coordinates'
 import { Diagram } from './Diagram'
 import { puzzles } from 'data/puzzles'
-import { TelemetryEvent } from 'controller/chess/telemetry'
+import { formatTelemetryEventsText, TelemetryEvent } from 'controller/chess/telemetry'
 
 type Analysis = 'single_board' | 'board_tree' | 'tree_diagram' | 'none'
 type ConfirmAction = 'current' | 'standard' | null
@@ -206,7 +206,16 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
     const hotspots = [...spanEvents]
       .sort((a, b) => b.durationMs - a.durationMs)
       .slice(0, 5)
-    return { latestStep, average, slowest, hotspots }
+    const latestTraceId =
+      (telemetryEvents.find((event) => event.meta?.traceId)?.meta?.traceId as
+        | string
+        | undefined) ?? ''
+    const traceEvents = latestTraceId
+      ? telemetryEvents
+          .filter((event) => event.meta?.traceId === latestTraceId)
+          .sort((a, b) => a.timestamp - b.timestamp)
+      : []
+    return { latestStep, average, slowest, hotspots, latestTraceId, traceEvents }
   }, [telemetryEvents])
 
   const boardChild = isValidElement(children)
@@ -244,6 +253,17 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
     } else {
       setTurnToWhite()
     }
+  }
+
+  const exportTelemetry = () => {
+    const text = formatTelemetryEventsText(telemetryEvents)
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = `telemetry-${new Date().toISOString().replace(/[:.]/g, '-')}.txt`
+    anchor.click()
+    URL.revokeObjectURL(url)
   }
 
   const renderAnalysis = () => {
@@ -391,6 +411,14 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
                     >
                       {telemetryExpanded ? 'Compact' : 'Expand'}
                     </button>
+                    <button
+                      type="button"
+                      className="chess-overlay-btn !p-1 text-[10px]"
+                      onClick={exportTelemetry}
+                      title="Export all telemetry as text"
+                    >
+                      Export
+                    </button>
                   </div>
                 </div>
 
@@ -448,6 +476,35 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
                       No telemetry events yet. Start AI to collect timings.
                     </p>
                   ) : null}
+                </div>
+
+                <p className="mt-2 text-[11px] font-semibold text-[#c8c0b3]">
+                  Latest trace hierarchy
+                </p>
+                <div className="max-h-[140px] space-y-1 overflow-y-auto rounded-lg border border-[#57534b] bg-[#262521] p-2">
+                  {telemetrySummary.latestTraceId ? (
+                    telemetrySummary.traceEvents.map((event) => {
+                      const depth = Number(event.meta?.depth ?? 0)
+                      return (
+                        <div
+                          key={`trace-${event.id}`}
+                          className="flex items-center justify-between gap-2 rounded border border-[#4f4a43] bg-[#312f2a] px-2 py-1 text-[11px]"
+                          style={{ marginLeft: `${Math.max(0, depth) * 10}px` }}
+                        >
+                          <span className="truncate text-[#ddd6c9]">
+                            d{depth} {event.name}
+                          </span>
+                          <span className={`telemetry-badge telemetry-${event.severity}`}>
+                            {event.durationMs.toFixed(1)}ms
+                          </span>
+                        </div>
+                      )
+                    })
+                  ) : (
+                    <p className="text-[11px] text-[#9c978d]">
+                      No trace yet. Start AI to see hierarchical call timing.
+                    </p>
+                  )}
                 </div>
 
                 <p className="mt-2 text-[11px] font-semibold text-[#c8c0b3]">
