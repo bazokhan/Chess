@@ -1,6 +1,8 @@
-import { FC, PropsWithChildren } from 'react'
+import { FC, HTMLAttributes, PropsWithChildren } from 'react'
 
-export const Paragraph: FC<PropsWithChildren & { className?: string }> = ({
+export const Paragraph: FC<
+  PropsWithChildren & HTMLAttributes<HTMLParagraphElement> & { className?: string }
+> = ({
   children,
   className,
   ...props
