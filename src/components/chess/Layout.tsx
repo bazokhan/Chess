@@ -120,6 +120,8 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
     clearTelemetry,
     telemetryPaused,
     toggleTelemetryPaused,
+    engineMode,
+    setEngineMode,
     tree
   } =
     useDebugContext()
@@ -215,7 +217,18 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
           .filter((event) => event.meta?.traceId === latestTraceId)
           .sort((a, b) => a.timestamp - b.timestamp)
       : []
-    return { latestStep, average, slowest, hotspots, latestTraceId, traceEvents }
+    const latestEngineMetrics = telemetryEvents.find(
+      (event) => event.name === 'engine.bitboard.metrics'
+    )
+    return {
+      latestStep,
+      average,
+      slowest,
+      hotspots,
+      latestTraceId,
+      traceEvents,
+      latestEngineMetrics
+    }
   }, [telemetryEvents])
 
   const boardChild = isValidElement(children)
@@ -390,6 +403,16 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
                     <button
                       type="button"
                       className="chess-overlay-btn !p-1 text-[10px]"
+                      onClick={() =>
+                        setEngineMode(engineMode === 'bitboard' ? 'legacy' : 'bitboard')
+                      }
+                      title="Toggle active engine mode"
+                    >
+                      {engineMode === 'bitboard' ? 'Bitboard' : 'Legacy'}
+                    </button>
+                    <button
+                      type="button"
+                      className="chess-overlay-btn !p-1 text-[10px]"
                       onClick={toggleTelemetryPaused}
                       title="Pause or resume telemetry capture"
                     >
@@ -423,6 +446,27 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
                 </div>
 
                 <div className="mb-2 grid grid-cols-2 gap-1 text-[11px]">
+                  <div className="rounded border border-[#57534b] bg-[#2f2d29] p-1">
+                    Engine mode: <span className="font-bold uppercase">{engineMode}</span>
+                  </div>
+                  <div className="rounded border border-[#57534b] bg-[#2f2d29] p-1">
+                    Nodes/sec:{' '}
+                    <span className="font-bold">
+                      {telemetrySummary.latestEngineMetrics?.meta?.nps ?? '--'}
+                    </span>
+                  </div>
+                  <div className="rounded border border-[#57534b] bg-[#2f2d29] p-1">
+                    Depth:{' '}
+                    <span className="font-bold">
+                      {telemetrySummary.latestEngineMetrics?.meta?.depthReached ?? '--'}
+                    </span>
+                  </div>
+                  <div className="rounded border border-[#57534b] bg-[#2f2d29] p-1">
+                    TT hit rate:{' '}
+                    <span className="font-bold">
+                      {telemetrySummary.latestEngineMetrics?.meta?.ttHitRate ?? '--'}%
+                    </span>
+                  </div>
                   <div className="rounded border border-[#57534b] bg-[#2f2d29] p-1">
                     Latest step:{' '}
                     <span className="font-bold">

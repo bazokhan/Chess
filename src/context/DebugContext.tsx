@@ -14,6 +14,8 @@ import { useTurnContext } from './TurnContext'
 import { usePositionContext } from './PositionContext'
 import { TCell, TPlayer } from 'types/Chess'
 import { calculateBestMoveV2 } from 'controller/chess/calculateBestMoveV2'
+import { getBestMoveEngine } from 'controller/chess/engine/getBestMoveEngine'
+import { EngineMode } from 'controller/chess/engine/bitboard/types'
 // import { fileLog } from 'controller/shared/fileLog'
 import {
   evaluatePosition,
@@ -21,10 +23,6 @@ import {
 } from 'controller/chess/evaluation'
 import { TreeItem } from 'types/Chess'
 import { minimax } from 'controller/chess/minimax'
-import {
-  checked,
-  minimaxSelfEvaluating
-} from 'controller/shared/minimaxSelfEvaluating'
 import {
   TelemetryEvent,
   clearTelemetryEvents,
@@ -54,6 +52,8 @@ const DebugContext = createContext<{
   clearTelemetry: () => void
   telemetryPaused: boolean
   toggleTelemetryPaused: () => void
+  engineMode: EngineMode
+  setEngineMode: Dispatch<SetStateAction<EngineMode>>
   tree: (TreeItem & { evaluation?: number })[]
 }>({
   setTurnToWhite: () => {},
@@ -71,6 +71,8 @@ const DebugContext = createContext<{
   clearTelemetry: () => {},
   telemetryPaused: false,
   toggleTelemetryPaused: () => {},
+  engineMode: 'bitboard',
+  setEngineMode: () => {},
   tree: []
 })
 
@@ -96,7 +98,8 @@ export const aiV2 = (
 export const aiV3 = (
   turn: TPlayer,
   position: TCell[],
-  playerTurn?: TPlayer
+  playerTurn?: TPlayer,
+  mode: EngineMode = 'bitboard'
 ) => {
   const turnToPlay = playerTurn ?? turn
   const traceId = createTraceId('ai-turn')
@@ -105,77 +108,37 @@ export const aiV3 = (
     { playerTurn: turnToPlay },
     { traceId, depth: 0 }
   )
-  const treeSpan = startSpan(
-    'ai.v3.generateTree',
-    { playerTurn: turnToPlay },
+  const decisionSpan = startSpan(
+    'ai.v3.getBestMoveEngine',
+    { playerTurn: turnToPlay, mode },
     { traceId, parentSpanId: totalSpan?.spanId, depth: 1 }
   )
-  const tree = generatePositionsTree(
-    playerTurn ?? turn,
+  const result = getBestMoveEngine({
+    turn: playerTurn ?? turn,
     position,
-    3,
-    false,
-    false,
-    true,
-    {
-      traceId,
-      parentSpanId: totalSpan?.spanId,
-      depthLevel: 1
-    }
-  )
-  endSpan(treeSpan)
-  const evaluation = evaluatePosition(position)
-  const minimaxSpan = startSpan(
-    'ai.v3.minimaxSelfEvaluating.root',
-    { playerTurn: turnToPlay },
-    { traceId, parentSpanId: totalSpan?.spanId, depth: 1 }
-  )
-  const positionKeyFn = (cells: TCell[]) =>
-    [...cells]
-      .sort((a, b) => a.square.localeCompare(b.square))
-      .map((cell) => `${cell.piece}@${cell.square}`)
-      .join('|')
-
-  const result = minimaxSelfEvaluating<Partial<TreeItem>, TCell[]>(
-    turn,
-    {
-      next: tree,
-      evaluation
-    },
-    'move',
-    0,
-    position,
-    evaluatePosition,
-    -Infinity,
-    Infinity,
-    true,
-    {
+    depth: 4,
+    timeMs: 1600,
+    mode,
+    telemetry: {
       enabled: true,
       traceId,
-      parentSpanId: minimaxSpan?.spanId
-    },
-    {
-      cache: new Map<string, number>(),
-      positionKeyFn,
-      orderMoves: true
+      parentSpanId: decisionSpan?.spanId
     }
-  )
-  const durationMs = endSpan(minimaxSpan)
+  })
+  const durationMs = endSpan(decisionSpan)
   recordTelemetryStep('ai.turn.decision', durationMs, {
     traceId,
     parentSpanId: totalSpan?.spanId,
     depth: 1,
-    checked,
-    branches: tree.length,
+    mode,
     playerTurn: turnToPlay,
-    bestMove: `${result.piece?.square ?? ''}${result.move ?? ''}`
+    bestMove: `${result?.piece?.square ?? ''}${result?.move ?? ''}`
   })
   recordTelemetryStep('ai.v3.summary', durationMs, {
     traceId,
     parentSpanId: totalSpan?.spanId,
     depth: 1,
-    checked,
-    branches: tree.length,
+    mode,
     playerTurn: turnToPlay
   })
   endSpan(totalSpan)
@@ -206,6 +169,7 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
   const [telemetryPaused, setTelemetryPausedState] = useState<boolean>(
     getTelemetryPaused()
   )
+  const [engineMode, setEngineMode] = useState<EngineMode>('bitboard')
   const aiPlayBlack = () => setAiPlayers(['b'])
   const aiPlayWhite = () => setAiPlayers(['w'])
   const aiPlayBoth = () => setAiPlayers(['w', 'b'])
@@ -241,7 +205,9 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
       //   bestMove = aiV3(playerTurn) as TreeItem | null
       // }
 
-      const bestMove = aiV3(turn, position, playerTurn) as TreeItem
+      const bestMove = aiV3(turn, position, playerTurn, engineMode) as
+        | TreeItem
+        | null
 
       if (bestMove) {
         await movePieceToCoordinate({
@@ -254,7 +220,15 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
 
       return true
     },
-    [aiPlayers, forceStop, moveNumber, movePieceToCoordinate, position, turn]
+    [
+      aiPlayers,
+      engineMode,
+      forceStop,
+      moveNumber,
+      movePieceToCoordinate,
+      position,
+      turn
+    ]
   )
 
   const runMatch = async () => {}
@@ -333,6 +307,8 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
         clearTelemetry,
         telemetryPaused,
         toggleTelemetryPaused,
+        engineMode,
+        setEngineMode,
         tree
       }}
     >
