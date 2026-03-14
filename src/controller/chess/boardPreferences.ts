@@ -1,5 +1,5 @@
 export type BoardTheme = 'classic' | 'olive' | 'blue'
-export type PieceTheme = 'classic' | 'neo'
+export type PieceTheme = 'classic' | 'neo' | 'icons' | 'glyphs'
 export type AnnotationColor = 'green' | 'red' | 'blue' | 'yellow'
 
 export type BoardPreferences = {
@@ -41,7 +41,12 @@ const sanitize = (input: Partial<BoardPreferences>): BoardPreferences => ({
     input.boardTheme === 'classic' || input.boardTheme === 'olive' || input.boardTheme === 'blue'
       ? input.boardTheme
       : DEFAULTS.boardTheme,
-  pieceTheme: input.pieceTheme === 'neo' ? 'neo' : 'classic',
+  pieceTheme:
+    input.pieceTheme === 'neo' ||
+    input.pieceTheme === 'icons' ||
+    input.pieceTheme === 'glyphs'
+      ? input.pieceTheme
+      : 'classic',
   annotationColor:
     input.annotationColor === 'red' ||
     input.annotationColor === 'blue' ||

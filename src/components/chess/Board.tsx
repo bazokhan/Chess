@@ -14,7 +14,7 @@ import { TSquare } from 'types/Chess'
 import { TPlayer } from 'types/Chess'
 import { BoardAnnotations } from './BoardAnnotations'
 import { useTurnContext } from 'context/TurnContext'
-import { pieceImages } from './Piece'
+import { renderPieceSet } from './pieceSet'
 
 type BoardProps = {
   hideCoordinates?: boolean
@@ -287,11 +287,11 @@ export const Board: FC<BoardProps> = ({
             top: dragState.clientY - (boardRef.current?.getBoundingClientRect().top ?? 0)
           }}
         >
-          <img
-            className="h-full w-full select-none"
-            src={pieceImages[dragState.fromCell.piece]}
-            draggable={false}
-          />
+          {renderPieceSet(
+            dragState.fromCell.piece,
+            preferences.pieceTheme,
+            'h-full w-full select-none'
+          )}
         </div>
       ) : null}
       {premove ? (

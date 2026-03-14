@@ -1,16 +1,3 @@
-import br from 'assets/chess_pieces/br.png'
-import bn from 'assets/chess_pieces/bn.png'
-import bb from 'assets/chess_pieces/bb.png'
-import bq from 'assets/chess_pieces/bq.png'
-import bk from 'assets/chess_pieces/bk.png'
-import bp from 'assets/chess_pieces/bp.png'
-import wr from 'assets/chess_pieces/wr.png'
-import wn from 'assets/chess_pieces/wn.png'
-import wb from 'assets/chess_pieces/wb.png'
-import wq from 'assets/chess_pieces/wq.png'
-import wk from 'assets/chess_pieces/wk.png'
-import wp from 'assets/chess_pieces/wp.png'
-
 import { FC, MouseEventHandler, useCallback, useMemo } from 'react'
 import { useBoardContext } from 'context/BoardContext'
 import { TCell } from 'types/Chess'
@@ -21,21 +8,7 @@ import {
 import { usePositionContext } from 'context/PositionContext'
 import { ANIMATION_DURATION } from 'controller/chess/constants'
 import { TPlayer } from 'types/Chess'
-
-export const pieceImages = {
-  br: br,
-  bn: bn,
-  bb: bb,
-  bq: bq,
-  bk: bk,
-  bp: bp,
-  wr: wr,
-  wn: wn,
-  wb: wb,
-  wq: wq,
-  wk: wk,
-  wp: wp
-}
+import { renderPieceSet } from './pieceSet'
 
 type PieceProps = {
   cell: TCell
@@ -126,15 +99,7 @@ export const Piece: FC<PieceProps> = ({ cell, orientation }) => {
       onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}
     >
-      <img
-        className={`h-full w-full select-none ${
-          preferences.pieceTheme === 'neo'
-            ? 'drop-shadow-[0_2px_4px_rgba(0,0,0,0.45)] saturate-110'
-            : ''
-        }`}
-        src={pieceImages[cell.piece]}
-        draggable={false}
-      />
+      {renderPieceSet(cell.piece, preferences.pieceTheme, 'h-full w-full select-none')}
     </div>
   )
 }

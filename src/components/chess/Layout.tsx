@@ -729,8 +729,10 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
                 }
                 title="Piece style"
               >
-                <option value="classic">Pieces: Classic</option>
-                <option value="neo">Pieces: Neo</option>
+                <option value="classic">Pieces: Image Classic</option>
+                <option value="neo">Pieces: Image Neo</option>
+                <option value="icons">Pieces: Icons (analysis set)</option>
+                <option value="glyphs">Pieces: Glyphs (analysis set)</option>
               </select>
               <button
                 type="button"
