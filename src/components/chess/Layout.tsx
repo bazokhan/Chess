@@ -40,6 +40,7 @@ import { MinimalBoard } from './MinimalBoard'
 import { getCoordinates } from 'controller/chess/coordinates'
 import { Diagram } from './Diagram'
 import { puzzles } from 'data/puzzles'
+import { TelemetryEvent } from 'controller/chess/telemetry'
 
 type Analysis = 'single_board' | 'board_tree' | 'tree_diagram' | 'none'
 type ConfirmAction = 'current' | 'standard' | null
@@ -115,6 +116,10 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
     toggleAiPlayer,
     setTurnToWhite,
     setTurnToBlack,
+    telemetryEvents,
+    clearTelemetry,
+    telemetryPaused,
+    toggleTelemetryPaused,
     tree
   } =
     useDebugContext()
@@ -125,6 +130,7 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
   const [isAnalysisOpen, setIsAnalysisOpen] = useState(true)
   const [isPuzzleModalOpen, setIsPuzzleModalOpen] = useState(false)
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null)
+  const [telemetryExpanded, setTelemetryExpanded] = useState(false)
 
   const next = tree.map((p) => ({
     ...p,
@@ -184,6 +190,24 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
     () => puzzles.find((p) => p.fen === currentSetupFen)?.id ?? '',
     [currentSetupFen]
   )
+
+  const telemetrySummary = useMemo(() => {
+    const latestStep = telemetryEvents.find((event) => event.type === 'step')
+    const spanEvents = telemetryEvents.filter((event) => event.type === 'span')
+    const average =
+      telemetryEvents.length > 0
+        ? telemetryEvents.reduce((acc, event) => acc + event.durationMs, 0) /
+          telemetryEvents.length
+        : 0
+    const slowest = spanEvents.reduce<TelemetryEvent | null>(
+      (acc, event) => (!acc || event.durationMs > acc.durationMs ? event : acc),
+      null
+    )
+    const hotspots = [...spanEvents]
+      .sort((a, b) => b.durationMs - a.durationMs)
+      .slice(0, 5)
+    return { latestStep, average, slowest, hotspots }
+  }, [telemetryEvents])
 
   const boardChild = isValidElement(children)
     ? cloneElement(children as ReactElement<{ orientation?: TPlayer }>, {
@@ -338,6 +362,111 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
                     ))
                   : 'No alerts'}
               </Paragraph>
+
+              <div className="mt-3 border-t border-[#59544b] pt-2">
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="title m-0">Engine Telemetry</p>
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      className="chess-overlay-btn !p-1 text-[10px]"
+                      onClick={toggleTelemetryPaused}
+                      title="Pause or resume telemetry capture"
+                    >
+                      {telemetryPaused ? 'Resume' : 'Pause'}
+                    </button>
+                    <button
+                      type="button"
+                      className="chess-overlay-btn !p-1 text-[10px]"
+                      onClick={clearTelemetry}
+                      title="Clear telemetry events"
+                    >
+                      Clear
+                    </button>
+                    <button
+                      type="button"
+                      className="chess-overlay-btn !p-1 text-[10px]"
+                      onClick={() => setTelemetryExpanded((v) => !v)}
+                      title="Toggle compact/expanded telemetry view"
+                    >
+                      {telemetryExpanded ? 'Compact' : 'Expand'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mb-2 grid grid-cols-2 gap-1 text-[11px]">
+                  <div className="rounded border border-[#57534b] bg-[#2f2d29] p-1">
+                    Latest step:{' '}
+                    <span className="font-bold">
+                      {telemetrySummary.latestStep
+                        ? `${telemetrySummary.latestStep.durationMs.toFixed(1)} ms`
+                        : '--'}
+                    </span>
+                  </div>
+                  <div className="rounded border border-[#57534b] bg-[#2f2d29] p-1">
+                    Avg event:{' '}
+                    <span className="font-bold">
+                      {telemetryEvents.length
+                        ? `${telemetrySummary.average.toFixed(1)} ms`
+                        : '--'}
+                    </span>
+                  </div>
+                  <div className="col-span-2 rounded border border-[#57534b] bg-[#2f2d29] p-1 text-[10px]">
+                    Slowest:{' '}
+                    <span className="font-bold">
+                      {telemetrySummary.slowest
+                        ? `${telemetrySummary.slowest.name} (${telemetrySummary.slowest.durationMs.toFixed(1)} ms)`
+                        : '--'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="max-h-[140px] space-y-1 overflow-y-auto rounded-lg border border-[#57534b] bg-[#262521] p-2">
+                  {(telemetryExpanded
+                    ? telemetryEvents
+                    : telemetryEvents.slice(0, 12)
+                  ).map((event) => (
+                    <div
+                      key={event.id}
+                      className="rounded border border-[#4f4a43] bg-[#312f2a] p-1"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-[11px] text-[#d9d3c7]">
+                          {event.name}
+                        </span>
+                        <span
+                          className={`telemetry-badge telemetry-${event.severity}`}
+                          title={`Duration ${event.durationMs.toFixed(1)} ms`}
+                        >
+                          {event.durationMs.toFixed(1)}ms
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                  {!telemetryEvents.length ? (
+                    <p className="text-[11px] text-[#9c978d]">
+                      No telemetry events yet. Start AI to collect timings.
+                    </p>
+                  ) : null}
+                </div>
+
+                <p className="mt-2 text-[11px] font-semibold text-[#c8c0b3]">
+                  Slowest functions
+                </p>
+                <div className="space-y-1">
+                  {telemetrySummary.hotspots.map((event) => (
+                    <div
+                      key={`hotspot-${event.id}`}
+                      className="flex items-center justify-between rounded border border-[#4d4841] bg-[#2f2d28] px-2 py-1 text-[11px]"
+                    >
+                      <span className="truncate text-[#ddd6c9]">{event.name}</span>
+                      <span className={`telemetry-badge telemetry-${event.severity}`}>
+                        {event.durationMs.toFixed(1)}ms
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </Column>
           </div>
 

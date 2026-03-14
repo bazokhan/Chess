@@ -25,3 +25,19 @@
 .chess-chip {
   @apply rounded-full border border-[#6a655a] px-3 py-1 text-xs font-bold;
 }
+
+.telemetry-badge {
+  @apply rounded border px-1 py-[1px] text-[10px] font-bold;
+}
+
+.telemetry-fast {
+  @apply border-green-700 bg-green-900/50 text-green-200;
+}
+
+.telemetry-warn {
+  @apply border-amber-700 bg-amber-900/50 text-amber-200;
+}
+
+.telemetry-slow {
+  @apply border-red-700 bg-red-900/50 text-red-200;
+}

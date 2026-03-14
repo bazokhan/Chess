@@ -25,6 +25,17 @@ import {
   checked,
   minimaxSelfEvaluating
 } from 'controller/shared/minimaxSelfEvaluating'
+import {
+  TelemetryEvent,
+  clearTelemetryEvents,
+  endSpan,
+  getTelemetryEvents,
+  getTelemetryPaused,
+  recordTelemetryStep,
+  setTelemetryPaused,
+  startSpan,
+  subscribeTelemetry
+} from 'controller/chess/telemetry'
 
 const DebugContext = createContext<{
   setTurnToWhite: () => void
@@ -38,6 +49,10 @@ const DebugContext = createContext<{
   aiPlayWhite: () => void
   aiPlayBoth: () => void
   toggleAiPlayer: (player: TPlayer) => void
+  telemetryEvents: TelemetryEvent[]
+  clearTelemetry: () => void
+  telemetryPaused: boolean
+  toggleTelemetryPaused: () => void
   tree: (TreeItem & { evaluation?: number })[]
 }>({
   setTurnToWhite: () => {},
@@ -51,6 +66,10 @@ const DebugContext = createContext<{
   aiPlayWhite: () => {},
   aiPlayBoth: () => {},
   toggleAiPlayer: () => {},
+  telemetryEvents: [],
+  clearTelemetry: () => {},
+  telemetryPaused: false,
+  toggleTelemetryPaused: () => {},
   tree: []
 })
 
@@ -61,16 +80,15 @@ export const aiV2 = (
   position: TCell[],
   playerTurn?: TPlayer
 ) => {
-  const start = Date.now()
-  console.log(
-    'Calculating using v2 ' + (playerTurn === 'w' ? 'For White' : 'For Black')
-  )
+  const span = startSpan('ai.v2.total', {
+    playerTurn: playerTurn ?? turn
+  })
   const result = calculateBestMoveV2({
     turn: playerTurn ?? turn,
     position,
     minimaxVersion: 2
   })
-  console.log(`took ${Date.now() - start} ms`)
+  endSpan(span)
   return result
 }
 
@@ -79,12 +97,16 @@ export const aiV3 = (
   position: TCell[],
   playerTurn?: TPlayer
 ) => {
-  console.log(
-    'Calculating using v3 ' + (playerTurn === 'w' ? 'For White' : 'For Black')
-  )
-  const tree = generatePositionsTree(playerTurn ?? turn, position, 3)
+  const turnToPlay = playerTurn ?? turn
+  const treeSpan = startSpan('ai.v3.generateTree', {
+    playerTurn: turnToPlay
+  })
+  const tree = generatePositionsTree(playerTurn ?? turn, position, 3, false, false, true)
+  endSpan(treeSpan)
   const evaluation = evaluatePosition(position)
-  const start = Date.now()
+  const minimaxSpan = startSpan('ai.v3.minimaxSelfEvaluating', {
+    playerTurn: turnToPlay
+  })
   const result = minimaxSelfEvaluating<Partial<TreeItem>, TCell[]>(
     turn,
     {
@@ -99,7 +121,12 @@ export const aiV3 = (
     Infinity,
     true
   )
-  console.log(`Took ${Date.now() - start} ms. Checked ${checked}`)
+  const durationMs = endSpan(minimaxSpan)
+  recordTelemetryStep('ai.v3.summary', durationMs, {
+    checked,
+    branches: tree.length,
+    playerTurn: turnToPlay
+  })
   return result
 }
 
@@ -121,6 +148,12 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
   const setTurnToBlack = () => setTurn('b')
 
   const [aiPlayers, setAiPlayers] = useState<TPlayer[]>(['b'])
+  const [telemetryEvents, setTelemetryEvents] = useState<TelemetryEvent[]>(
+    getTelemetryEvents()
+  )
+  const [telemetryPaused, setTelemetryPausedState] = useState<boolean>(
+    getTelemetryPaused()
+  )
   const aiPlayBlack = () => setAiPlayers(['b'])
   const aiPlayWhite = () => setAiPlayers(['w'])
   const aiPlayBoth = () => setAiPlayers(['w', 'b'])
@@ -139,7 +172,8 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
         alpha: -99999,
         beta: 99999,
         player: turn,
-        version: 2
+        version: 2,
+        withTelemetry: false
       })
     })
   )
@@ -148,6 +182,7 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
     async (playerTurn?: TPlayer, recordHistory?: boolean) => {
       if (forceStop && !playerTurn) return
       if (!aiPlayers.includes(turn)) return
+      const decisionStart = performance.now()
       // let bestMove: TreeItem | null
       // if (playerTurn === 'b') {
       //   bestMove = aiV2(playerTurn)
@@ -155,7 +190,19 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
       //   bestMove = aiV3(playerTurn) as TreeItem | null
       // }
 
+      const aiTotalSpan = startSpan('ai.turn.total', {
+        playerTurn: playerTurn ?? turn
+      })
       const bestMove = aiV3(turn, position, playerTurn) as TreeItem
+      const decisionTime = performance.now() - decisionStart
+      endSpan(aiTotalSpan)
+
+      recordTelemetryStep('ai.turn.decision', decisionTime, {
+        moveNumber: moveNumber + 1,
+        turn: playerTurn ?? turn,
+        bestMove: bestMove ? `${bestMove.piece.square}${bestMove.move}` : 'none',
+        checked
+      })
 
       if (bestMove) {
         await movePieceToCoordinate({
@@ -168,10 +215,17 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
 
       return true
     },
-    [aiPlayers, forceStop, movePieceToCoordinate, position, turn]
+    [aiPlayers, forceStop, moveNumber, movePieceToCoordinate, position, turn]
   )
 
   const runMatch = async () => {}
+
+  useEffect(() => {
+    const unsubscribe = subscribeTelemetry((nextEvents) => {
+      setTelemetryEvents(nextEvents)
+    })
+    return unsubscribe
+  }, [])
 
   useEffect(() => {
     if (moveRef.current === moveNumber) return
@@ -212,6 +266,16 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
     turn
   ])
 
+  const clearTelemetry = () => {
+    clearTelemetryEvents()
+  }
+
+  const toggleTelemetryPaused = () => {
+    const nextValue = !telemetryPaused
+    setTelemetryPaused(nextValue)
+    setTelemetryPausedState(nextValue)
+  }
+
   return (
     <DebugContext.Provider
       value={{
@@ -226,6 +290,10 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
         aiPlayWhite,
         aiPlayBoth,
         toggleAiPlayer,
+        telemetryEvents,
+        clearTelemetry,
+        telemetryPaused,
+        toggleTelemetryPaused,
         tree
       }}
     >
