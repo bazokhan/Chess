@@ -1,11 +1,14 @@
 import { FC, PropsWithChildren } from 'react'
 
-export const Column: FC<PropsWithChildren & { width?: number }> = ({
+export const Column: FC<
+  PropsWithChildren & { width?: number; className?: string }
+> = ({
   children,
-  width
+  width,
+  className
 }) => (
   <div
-    className="flex flex-col gap-2 rounded-md bg-[#383734] p-4 text-[#9c9b9a]"
+    className={`flex flex-col gap-2 rounded-xl border border-[#5a5750] bg-[#35342f] p-4 text-[#d2cdc3] shadow-[0_8px_30px_rgba(0,0,0,0.25)] ${className ?? ''}`}
     style={width ? { width: `${width}px` } : {}}
   >
     {children}

@@ -1,7 +1,15 @@
 .title {
-  @apply mt-2 text-lg font-bold;
+  @apply mt-3 text-xs font-bold uppercase tracking-[0.14em] text-[#beb9b1];
 }
 
 .btn-group {
-  @apply flex items-center justify-between gap-2;
+  @apply flex flex-wrap items-center justify-between gap-2;
+}
+
+.chess-tab {
+  @apply inline-flex items-center justify-center rounded-lg border border-[#5b5750] bg-[#3f3d38] px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-[#d6d0c4] transition-colors hover:bg-[#504c44] hover:text-white;
+}
+
+.chess-tab-active {
+  @apply border-[#9a8f7a] bg-[#5d584f] text-white;
 }

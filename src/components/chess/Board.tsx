@@ -90,7 +90,7 @@ export const Board: FC<BoardProps> = ({ hideCoordinates = false }) => {
 
   return (
     <div
-      className="relative max-h-[80vh] w-[80vh] overflow-hidden rounded-md bg-white"
+      className="relative mx-auto aspect-square w-full max-w-[min(92vw,80vh)] overflow-hidden rounded-lg border border-[#5e5a52] bg-white shadow-[0_16px_28px_rgba(0,0,0,0.35)] xl:max-w-[80vh]"
       ref={boardRef}
       onClick={handleBoardClick}
     >
