@@ -130,6 +130,12 @@ export const aiV3 = (
     { playerTurn: turnToPlay },
     { traceId, parentSpanId: totalSpan?.spanId, depth: 1 }
   )
+  const positionKeyFn = (cells: TCell[]) =>
+    [...cells]
+      .sort((a, b) => a.square.localeCompare(b.square))
+      .map((cell) => `${cell.piece}@${cell.square}`)
+      .join('|')
+
   const result = minimaxSelfEvaluating<Partial<TreeItem>, TCell[]>(
     turn,
     {
@@ -147,6 +153,11 @@ export const aiV3 = (
       enabled: true,
       traceId,
       parentSpanId: minimaxSpan?.spanId
+    },
+    {
+      cache: new Map<string, number>(),
+      positionKeyFn,
+      orderMoves: true
     }
   )
   const durationMs = endSpan(minimaxSpan)
