@@ -20,10 +20,11 @@ import {
 import { encodeFenPosition } from 'controller/chess/fen'
 import { initialPosition } from 'data/normalInitialPosition'
 import { isWhite } from 'controller/chess/isWhite'
-import { initPosition } from 'data/initPosition'
+import { defaultPuzzleFen, initPosition, standardFen } from 'data/initPosition'
 import { TSquare } from 'types/Chess'
 import { encodePgn } from 'controller/chess/pgn'
 import { getMoves } from 'controller/chess/moves'
+import { parseFenPosition } from 'controller/chess/fen'
 
 type MovePieceArgs = {
   cell: TCell
@@ -53,6 +54,10 @@ type PositionContextValue = {
   promotionType: TPromotion
   hPosition: TPosition
   resetPosition: () => void
+  resetToCurrentSetup: () => void
+  resetToStandardGame: () => void
+  loadFenPosition: (fen: string) => void
+  currentSetupFen: string
   fen: string
   whiteMoves: string[]
   blackMoves: string[]
@@ -78,6 +83,10 @@ const PositionContext = createContext<PositionContextValue>({
   promotionType: 'Q',
   hPosition: {} as TPosition,
   resetPosition: () => {},
+  resetToCurrentSetup: () => {},
+  resetToStandardGame: () => {},
+  loadFenPosition: () => {},
+  currentSetupFen: defaultPuzzleFen,
   fen: encodeFenPosition(initialPosition, 'w'),
   whiteMoves: [],
   blackMoves: []
@@ -91,14 +100,38 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
   const [pgn, setPgn] = useState<string[]>([])
   const [animate, setAnimate] = useState<AnimationRecord>({})
   const [promotionType, setPromotionType] = useState<TPromotion>('Q')
+  const [currentSetupFen, setCurrentSetupFen] = useState(defaultPuzzleFen)
 
-  const resetPosition = () => {
-    setPosition(initPosition)
+  const { turn, toggleTurn, setTurn } = useTurnContext()
+
+  const clearTransientState = () => {
     setHistory([])
     setPgn([])
+    setAnimate({})
   }
 
-  const { turn, toggleTurn } = useTurnContext()
+  const loadFenPosition = (fen: string) => {
+    setCurrentSetupFen(fen)
+    setPosition(parseFenPosition(fen))
+    setTurn((fen.split(' ')[1] ?? 'w') as 'w' | 'b')
+    clearTransientState()
+  }
+
+  const resetToCurrentSetup = () => {
+    setPosition(parseFenPosition(currentSetupFen))
+    setTurn((currentSetupFen.split(' ')[1] ?? 'w') as 'w' | 'b')
+    clearTransientState()
+  }
+
+  const resetToStandardGame = () => {
+    setCurrentSetupFen(standardFen)
+    setPosition(parseFenPosition(standardFen))
+    setTurn('w')
+    clearTransientState()
+  }
+
+  const resetPosition = resetToCurrentSetup
+
   const tween = async (
     cellsAndMoves: [TCell, [TCoordinate, TCoordinate]][]
   ) => {
@@ -316,6 +349,10 @@ export const PositionProvider: FC<PropsWithChildren> = ({ children }) => {
         setPromotionType,
         hPosition,
         resetPosition,
+        resetToCurrentSetup,
+        resetToStandardGame,
+        loadFenPosition,
+        currentSetupFen,
         fen,
         whiteMoves,
         blackMoves

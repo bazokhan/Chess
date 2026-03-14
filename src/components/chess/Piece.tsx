@@ -14,9 +14,13 @@ import wp from 'assets/chess_pieces/wp.png'
 import { FC, MouseEventHandler, useCallback, useMemo } from 'react'
 import { useBoardContext } from 'context/BoardContext'
 import { TCell } from 'types/Chess'
-import { getCoordinates } from 'controller/chess/coordinates'
+import {
+  getCoordinates,
+  getDisplayCoordinate
+} from 'controller/chess/coordinates'
 import { usePositionContext } from 'context/PositionContext'
 import { ANIMATION_DURATION } from 'controller/chess/constants'
+import { TPlayer } from 'types/Chess'
 
 const pieceImages = {
   br: br,
@@ -35,18 +39,19 @@ const pieceImages = {
 
 type PieceProps = {
   cell: TCell
+  orientation: TPlayer
 }
 
 // #eb6150  /80
 // #ffff33  /50
 
-export const Piece: FC<PieceProps> = ({ cell }) => {
+export const Piece: FC<PieceProps> = ({ cell, orientation }) => {
   const { activeCell, setActiveCell } = useBoardContext()
   const { animate, future } = usePositionContext()
   const isActive = activeCell?.square === cell.square
   const isAnimated = animate[cell.square]?.cell.square === cell.square
 
-  const { x, y } = getCoordinates(cell.square)
+  const logicalCoordinates = getCoordinates(cell.square)
 
   const onToggle: MouseEventHandler = useCallback(
     (e) => {
@@ -65,15 +70,15 @@ export const Piece: FC<PieceProps> = ({ cell }) => {
     [activeCell, cell, isActive, setActiveCell]
   )
 
-  const currentX = useMemo(() => {
-    if (!isAnimated) return x
-    return animate[cell.square]?.move?.[1]?.x ?? 0
-  }, [animate, cell.square, isAnimated, x])
-
-  const currentY = useMemo(() => {
-    if (!isAnimated) return y
-    return animate[cell.square]?.move?.[1]?.y ?? 0
-  }, [animate, cell.square, isAnimated, y])
+  const displayCoordinates = useMemo(() => {
+    const currentCoordinates = isAnimated
+      ? {
+          x: animate[cell.square]?.move?.[1]?.x ?? 0,
+          y: animate[cell.square]?.move?.[1]?.y ?? 0
+        }
+      : logicalCoordinates
+    return getDisplayCoordinate(currentCoordinates, orientation)
+  }, [animate, cell.square, isAnimated, logicalCoordinates.x, logicalCoordinates.y, orientation])
 
   return (
     <div
@@ -81,8 +86,8 @@ export const Piece: FC<PieceProps> = ({ cell }) => {
         isActive ? 'z-30' : 'z-20'
       }  h-[12.5%] w-[12.5%] cursor-grab`}
       style={{
-        top: `${currentY * 12.5}%`,
-        left: `${currentX * 12.5}%`,
+        top: `${displayCoordinates.y * 12.5}%`,
+        left: `${displayCoordinates.x * 12.5}%`,
         transition: `all ${ANIMATION_DURATION}ms`
       }}
       onClick={future?.length ? undefined : onToggle}

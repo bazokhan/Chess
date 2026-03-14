@@ -1,13 +1,17 @@
 import { FC } from 'react'
+import { TPlayer } from 'types/Chess'
 
 type BoardGridProps = {
   hideCoordinates: boolean
+  orientation: TPlayer
 }
 
-const nums = [8, 7, 6, 5, 4, 3, 2, 1]
-const letters = 'abcdefgh'.split('')
+const numsW = [8, 7, 6, 5, 4, 3, 2, 1]
+const numsB = [1, 2, 3, 4, 5, 6, 7, 8]
+const lettersW = 'abcdefgh'.split('')
+const lettersB = 'hgfedcba'.split('')
 
-export const BoardGrid: FC<BoardGridProps> = ({ hideCoordinates }) => (
+export const BoardGrid: FC<BoardGridProps> = ({ hideCoordinates, orientation }) => (
   <svg
     width="800px"
     height="800px"
@@ -22,7 +26,7 @@ export const BoardGrid: FC<BoardGridProps> = ({ hideCoordinates }) => (
     />
     {hideCoordinates ? null : (
       <>
-        {nums.map((num, index) => (
+        {(orientation === 'w' ? numsW : numsB).map((num, index) => (
           <text
             key={num}
             x="4"
@@ -33,7 +37,7 @@ export const BoardGrid: FC<BoardGridProps> = ({ hideCoordinates }) => (
             {num}
           </text>
         ))}
-        {letters.map((letter, index) => (
+        {(orientation === 'w' ? lettersW : lettersB).map((letter, index) => (
           <text
             key={letter}
             x={(index + 1) * 64 - 12}

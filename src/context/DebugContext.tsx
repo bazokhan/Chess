@@ -37,6 +37,7 @@ const DebugContext = createContext<{
   aiPlayBlack: () => void
   aiPlayWhite: () => void
   aiPlayBoth: () => void
+  toggleAiPlayer: (player: TPlayer) => void
   tree: (TreeItem & { evaluation?: number })[]
 }>({
   setTurnToWhite: () => {},
@@ -49,6 +50,7 @@ const DebugContext = createContext<{
   aiPlayBlack: () => {},
   aiPlayWhite: () => {},
   aiPlayBoth: () => {},
+  toggleAiPlayer: () => {},
   tree: []
 })
 
@@ -122,6 +124,10 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
   const aiPlayBlack = () => setAiPlayers(['b'])
   const aiPlayWhite = () => setAiPlayers(['w'])
   const aiPlayBoth = () => setAiPlayers(['w', 'b'])
+  const toggleAiPlayer = (player: TPlayer) =>
+    setAiPlayers((prev) =>
+      prev.includes(player) ? prev.filter((p) => p !== player) : [...prev, player]
+    )
 
   const tree = generatePositionsTree(turn, position, 1).map(
     (branch, index) => ({
@@ -219,6 +225,7 @@ export const DebugProvider: FC<PropsWithChildren> = ({ children }) => {
         aiPlayBlack,
         aiPlayWhite,
         aiPlayBoth,
+        toggleAiPlayer,
         tree
       }}
     >

@@ -4,15 +4,24 @@ import { Highlights } from './BoardHighlights'
 import { Pieces } from './BoardPieces'
 import { BoardGrid } from './BoardGrid'
 import { usePositionContext } from 'context/PositionContext'
-import { getCoordinates } from 'controller/chess/coordinates'
+import {
+  getCoordinates,
+  getDisplayCoordinate,
+  getLogicalCoordinate
+} from 'controller/chess/coordinates'
 import { getPosition } from 'controller/chess/getPosition.web'
 import { TSquare } from 'types/Chess'
+import { TPlayer } from 'types/Chess'
 
 type BoardProps = {
   hideCoordinates?: boolean
+  orientation?: TPlayer
 }
 
-export const Board: FC<BoardProps> = ({ hideCoordinates = false }) => {
+export const Board: FC<BoardProps> = ({
+  hideCoordinates = false,
+  orientation = 'w'
+}) => {
   const boardRef = useRef<HTMLDivElement>(null)
 
   const {
@@ -46,14 +55,16 @@ export const Board: FC<BoardProps> = ({ hideCoordinates = false }) => {
                 activeCell.square === m.slice(2, 4)
             )
             .map((m) => m.slice(4) as TSquare)
-            .map(getCoordinates),
-    [activeCell, blackMoves, whiteMoves]
+            .map(getCoordinates)
+            .map((coord) => getDisplayCoordinate(coord, orientation)),
+    [activeCell, blackMoves, orientation, whiteMoves]
   )
 
   useEffect(() => {
     const handleRightClick = (e: MouseEvent) => {
       e.preventDefault()
-      const { x, y } = getPosition(e.clientX, e.clientY, boardRef.current)
+      const displayCoordinate = getPosition(e.clientX, e.clientY, boardRef.current)
+      const { x, y } = getLogicalCoordinate(displayCoordinate, orientation)
       if (!activeCell) {
         toggleHighlight({ x, y })
       } else {
@@ -68,10 +79,10 @@ export const Board: FC<BoardProps> = ({ hideCoordinates = false }) => {
 
   const handleBoardClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!e.isPropagationStopped()) {
-      const { x: boardX, y: boardY } = getPosition(
-        e.clientX,
-        e.clientY,
-        boardRef.current
+      const displayCoordinate = getPosition(e.clientX, e.clientY, boardRef.current)
+      const { x: boardX, y: boardY } = getLogicalCoordinate(
+        displayCoordinate,
+        orientation
       )
       const targetMove = availableMoves.find((m) => {
         const { x, y } = getCoordinates(m)
@@ -90,7 +101,7 @@ export const Board: FC<BoardProps> = ({ hideCoordinates = false }) => {
 
   return (
     <div
-      className="relative mx-auto aspect-square w-full max-w-[min(92vw,80vh)] overflow-hidden rounded-lg border border-[#5e5a52] bg-white shadow-[0_16px_28px_rgba(0,0,0,0.35)] xl:max-w-[80vh]"
+      className="relative mx-auto aspect-square w-full max-w-[min(92vw,76vh)] overflow-hidden rounded-lg border border-[#5e5a52] bg-white shadow-[0_16px_28px_rgba(0,0,0,0.35)] xl:max-w-[76vh]"
       ref={boardRef}
       onClick={handleBoardClick}
     >
@@ -103,9 +114,10 @@ export const Board: FC<BoardProps> = ({ hideCoordinates = false }) => {
         history={history}
         activeCoordinates={activeCoordinates}
         position={position}
+        orientation={orientation}
       />
-      <BoardGrid hideCoordinates={hideCoordinates} />
-      <Pieces position={position} />
+      <BoardGrid hideCoordinates={hideCoordinates} orientation={orientation} />
+      <Pieces position={position} orientation={orientation} />
     </div>
   )
 }

@@ -13,3 +13,15 @@
 .chess-tab-active {
   @apply border-[#9a8f7a] bg-[#5d584f] text-white;
 }
+
+.chess-overlay-btn {
+  @apply inline-flex items-center justify-center gap-1 rounded-lg border border-[#6f6a60] bg-[#2f2e29] p-2 text-[#ece3d2] transition-colors hover:bg-[#45423a] disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+.chess-overlay-btn-active {
+  @apply border-[#4ca06e] bg-[#1f6b45] text-[#e8ffef];
+}
+
+.chess-chip {
+  @apply rounded-full border border-[#6a655a] px-3 py-1 text-xs font-bold;
+}

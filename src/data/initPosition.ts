@@ -34,8 +34,9 @@ export const null_move_positions = [
   '8/8/1p1r1k2/p1pPN1p1/P3KnP1/1P6/8/3R4 b - - 0 1 bm Nxd5; id "zugzwang.005"'
 ]
 
-const position = mateIn2Puzzles[4][Model.FEN]
-// const position = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w'
-export const initPosition = parseFenPosition(position)
-export const initialTurn = (position.split(' ')[1] ?? 'w') as TPlayer
+export const standardFen = `${fen_positions.normal} - - 0 1`
+export const defaultPuzzleFen = mateIn2Puzzles[4][Model.FEN]
+const initialFen = defaultPuzzleFen
+export const initPosition = parseFenPosition(initialFen)
+export const initialTurn = (initialFen.split(' ')[1] ?? 'w') as TPlayer
 // const initPosition = initialPosition
