@@ -241,11 +241,7 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
   const bottomPlayer = orientation === 'w' ? 'w' : 'b'
 
   const toggleAi = (player: TPlayer) => {
-    const nextAiPlayers = aiPlayers.includes(player)
-      ? aiPlayers.filter((p) => p !== player)
-      : [...aiPlayers, player]
     toggleAiPlayer(player)
-    setForceStop(nextAiPlayers.length === 0)
   }
 
   const runConfirmAction = () => {
