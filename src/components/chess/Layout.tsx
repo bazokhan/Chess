@@ -6,6 +6,7 @@ import {
   isValidElement,
   PropsWithChildren,
   ReactElement,
+  useEffect,
   useMemo,
   useState
 } from 'react'
@@ -130,11 +131,12 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
 
   const [analysisMode, setAnalysisMode] = useState<Analysis>('single_board')
   const [orientation, setOrientation] = useState<TPlayer>('w')
-  const [isLogsOpen, setIsLogsOpen] = useState(true)
-  const [isAnalysisOpen, setIsAnalysisOpen] = useState(true)
+  const [isLogsOpen, setIsLogsOpen] = useState(false)
+  const [isAnalysisOpen, setIsAnalysisOpen] = useState(false)
   const [isPuzzleModalOpen, setIsPuzzleModalOpen] = useState(false)
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null)
   const [telemetryExpanded, setTelemetryExpanded] = useState(false)
+  const [showBoardTools, setShowBoardTools] = useState(false)
   const {
     clearAnnotations,
     removeLastAnnotation,
@@ -356,9 +358,23 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
     )
   }
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const desktop = window.matchMedia('(min-width: 1280px)')
+    const syncDesktopPanels = () => {
+      if (desktop.matches) {
+        setIsLogsOpen(true)
+        setIsAnalysisOpen(true)
+      }
+    }
+    syncDesktopPanels()
+    desktop.addEventListener('change', syncDesktopPanels)
+    return () => desktop.removeEventListener('change', syncDesktopPanels)
+  }, [])
+
   return (
     <GameLayout>
-      <div className="flex h-full w-full flex-col overflow-hidden">
+      <div className="flex h-full w-full flex-col overflow-hidden pb-16 sm:pb-0">
         <div className="mb-2 flex items-center justify-between gap-2">
           <div>
             <p className="text-xs uppercase tracking-[0.16em] text-[#beb9b1]">Chess</p>
@@ -393,7 +409,7 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
         </div>
 
         <div className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[300px_minmax(0,1fr)_360px]">
-          <div className={`${isLogsOpen ? 'block min-h-0' : 'hidden'} xl:block`}>
+          <div className="hidden min-h-0 xl:block">
             <Column className="h-full min-h-0 overflow-hidden">
               <p className="title m-0">Logs</p>
               <p className="text-xs text-[#bfb8ab]">PGN</p>
@@ -609,7 +625,7 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
               >
                 Turn: {turn === 'w' ? 'White' : 'Black'}
               </span>
-              <div className="flex items-center gap-1">
+              <div className="flex flex-wrap items-center gap-1">
                 <button
                   type="button"
                   className="chess-overlay-btn"
@@ -671,7 +687,28 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
               </div>
             </div>
 
-            <div className="mb-2 grid grid-cols-2 gap-1 lg:grid-cols-6">
+            <div className="mb-2 flex items-center justify-between gap-2 xl:hidden">
+              <button
+                type="button"
+                className="chess-overlay-btn text-xs"
+                onClick={() => setShowBoardTools((v) => !v)}
+              >
+                {showBoardTools ? 'Hide board tools' : 'Show board tools'}
+              </button>
+              <button
+                type="button"
+                className="chess-overlay-btn text-xs"
+                onClick={() => setPremove(null)}
+              >
+                {premove ? `Clear premove (${premove.from}->${premove.to})` : 'No premove'}
+              </button>
+            </div>
+
+            <div
+              className={`mb-2 grid grid-cols-2 gap-1 lg:grid-cols-6 ${
+                showBoardTools ? 'grid' : 'hidden'
+              } xl:grid`}
+            >
               <select
                 className="rounded border border-[#5f5a52] bg-[#2f2d29] px-2 py-1 text-xs text-[#f0e8d7]"
                 value={preferences.boardTheme}
@@ -756,7 +793,9 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
               />
             </div>
 
-            <div className="mx-auto w-full max-w-[min(96vw,76vh)]">{boardChild}</div>
+            <div className="mx-auto w-full max-w-[min(92vw,calc(100dvh-260px))] xl:max-w-[min(96vw,76vh)]">
+              {boardChild}
+            </div>
 
             <div className="mt-2">
               <SideDock
@@ -769,7 +808,7 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
             </div>
           </div>
 
-          <div className={`${isAnalysisOpen ? 'block min-h-0' : 'hidden'} xl:block`}>
+          <div className="hidden min-h-0 xl:block">
             <Column className="h-full min-h-0 overflow-hidden">
               <p className="title m-0">Analysis</p>
               <div className="mb-2 grid grid-cols-2 gap-1">
@@ -867,6 +906,91 @@ export const Layout: FC<PropsWithChildren> = ({ children }) => {
             </Column>
           </div>
         </div>
+
+        {isLogsOpen ? (
+          <div className="fixed inset-x-2 bottom-14 z-40 max-h-[58dvh] overflow-y-auto rounded-lg border border-[#5f5a52] bg-[#2d2c28] p-2 shadow-xl xl:hidden">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="title m-0">Logs</p>
+              <button
+                type="button"
+                className="chess-overlay-btn !p-1 text-[11px]"
+                onClick={() => setIsLogsOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+            <p className="text-xs text-[#bfb8ab]">PGN</p>
+            <div className="max-h-[120px] overflow-y-auto">
+              <Paragraph className="text-xs">
+                {pgn.length ? pgn.map((item) => <p key={item}>{item}</p>) : 'No moves yet'}
+              </Paragraph>
+            </div>
+            <p className="mt-2 text-xs text-[#bfb8ab]">Possible moves</p>
+            <div className="max-h-[120px] overflow-y-auto rounded-lg border border-[#57534c] bg-[#302f2b] p-2">
+              {possibleMoves.length ? (
+                possibleMoves.map((text) => (
+                  <p key={text} className="m-0 w-full px-1 py-0 text-xs text-[#d9d3c7]">
+                    {text}
+                  </p>
+                ))
+              ) : (
+                <p className="text-xs text-[#a39d91]">No generated move list.</p>
+              )}
+            </div>
+          </div>
+        ) : null}
+
+        {isAnalysisOpen ? (
+          <div className="fixed inset-x-2 bottom-14 z-40 max-h-[58dvh] overflow-y-auto rounded-lg border border-[#5f5a52] bg-[#2d2c28] p-2 shadow-xl xl:hidden">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="title m-0">Analysis</p>
+              <button
+                type="button"
+                className="chess-overlay-btn !p-1 text-[11px]"
+                onClick={() => setIsAnalysisOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+            <div className="btn-group">
+              <button
+                type="button"
+                className={`chess-tab ${analysisMode === 'none' ? 'chess-tab-active' : ''}`}
+                onClick={() => setAnalysisMode('none')}
+              >
+                None
+              </button>
+              <button
+                type="button"
+                className={`chess-tab ${
+                  analysisMode === 'single_board' ? 'chess-tab-active' : ''
+                }`}
+                onClick={() => setAnalysisMode('single_board')}
+              >
+                Single
+              </button>
+              <button
+                type="button"
+                className={`chess-tab ${
+                  analysisMode === 'board_tree' ? 'chess-tab-active' : ''
+                }`}
+                onClick={() => setAnalysisMode('board_tree')}
+              >
+                Boards
+              </button>
+              <button
+                type="button"
+                className={`chess-tab ${
+                  analysisMode === 'tree_diagram' ? 'chess-tab-active' : ''
+                }`}
+                onClick={() => setAnalysisMode('tree_diagram')}
+              >
+                Diagram
+              </button>
+            </div>
+            <div className="mt-2">{renderAnalysis()}</div>
+          </div>
+        ) : null}
 
         <div className="fixed inset-x-2 bottom-2 z-40 flex gap-1 rounded-lg border border-[#5f5a52] bg-[#2d2c28] p-1 sm:hidden">
           <button
